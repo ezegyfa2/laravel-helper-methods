@@ -21,7 +21,7 @@ class DatabaseRowAsserter
     public function assert()
     {
         $row = DB::table($this->tableName)->find($this->rowId);
-        $row = ArrayHelpers::convert($row);
+        $row = ArrayMethods::convert($row);
         $correctRowValues = array_intersect_assoc($row, $this->expectedRow);
         assertEquals(count($this->expectedRow), count($correctRowValues),
             'Unexpected values in row: ' . json_encode($this->getDatabaseRowCurrentValues($row))
