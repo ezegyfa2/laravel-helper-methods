@@ -1,6 +1,6 @@
 <?php
 
-namespace Helpers;
+namespace Ezegyfa\LaravelHelperMethods;
 
 class StringMethods
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Helpers;
+namespace Ezegyfa\LaravelHelperMethods;
 
 use Illuminate\Support\Facades\DB;
 use function PHPUnit\Framework\assertEquals;

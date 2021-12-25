@@ -1,6 +1,6 @@
 <?php
 
-namespace Helpers\Tests;
+namespace Ezegyfa\LaravelHelperMethods\Tests;
 
 trait CreateMethods
 {
