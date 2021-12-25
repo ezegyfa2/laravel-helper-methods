@@ -1,0 +1,16 @@
+{
+    "name": "ezegyfa/laravel-helper-methods",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Ezegyfa\\LaravelHelperMethods\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "ezegyfa2",
+            "email": "darvasvok@gmail.com"
+        }
+    ],
+    "require": {}
+}
