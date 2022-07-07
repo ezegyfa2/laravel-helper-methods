@@ -1,11 +1,12 @@
 <?php
 
-namespace Ezegyfa\LaravelHelperMethods;
+namespace Ezegyfa\LaravelHelperMethods\Database;
 
+use Ezegyfa\LaravelHelperMethods\ArrayMethods;
 use Illuminate\Support\Facades\DB;
 use function PHPUnit\Framework\assertEquals;
 
-class DatabaseRowAsserter
+class RowAsserter
 {
     public $tableName;
     public $rowId;
