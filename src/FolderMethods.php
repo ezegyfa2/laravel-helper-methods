@@ -18,7 +18,7 @@ class FolderMethods
         $folderFiles = scandir($folderPath);
         unset($folderFiles[array_search('.', $folderFiles, true)]);
         unset($folderFiles[array_search('..', $folderFiles, true)]);
-        return $folderFiles;
+        return array_values($folderFiles);
     }
 
     public static function copyFolder($src,$dst) {

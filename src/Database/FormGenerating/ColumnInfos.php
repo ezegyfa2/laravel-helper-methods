@@ -33,10 +33,10 @@ class ColumnInfos {
         }
     }
 
-    public function getFormInfos($withOldValue = true) {
+    public function getFormInfos($labelPrefix = '', $withOldValue = true) {
         $formInfos = $this->getSpecificFormInfos();
         $formInfos['name'] = $this->name;
-        $formInfos['label'] = __($this->name);
+        $formInfos['label'] = __($labelPrefix .  '.' . $this->name);
         if ($this->name == 'email') {
             $formInfos['value_type'] = 'email';
         }
@@ -158,7 +158,7 @@ class ColumnInfos {
                     'max:' . $this->getLength(),
                 ];
             case 'text':
-                return ['string'];
+                return [];
             case 'date':
                 return ['date'];
             case 'timestamp':

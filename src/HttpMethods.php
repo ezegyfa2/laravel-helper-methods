@@ -16,7 +16,7 @@ class HttpMethods
         ], 422);
     }
 
-    public static function getStoreRequest(Request $request, String $tableName, $successRoute, $successMessage) {
+    public static function getStoreRequest(Request $request, String $tableName, $successMessage, $successRoute, $errorRoute = null) {
         $tableInfos = DatabaseInfos::getTableInfos()[$tableName];
         try {
             $request->validate($tableInfos->getValidators());
@@ -24,7 +24,12 @@ class HttpMethods
         }
         catch (ValidationException $e) {
             $errorMessages = static::updateErrors($e->errors(), $e->validator->failed());
-            return redirect()->back()->withInput(request()->all())->withErrors($errorMessages);
+            if ($errorRoute) {
+                return redirect()->to($errorRoute)->withInput(request()->all())->withErrors($errorMessages);
+            }
+            else {
+                return redirect()->back()->withInput(request()->all())->withErrors($errorMessages);
+            }
         }
         return redirect($successRoute)->with('success_message', $successMessage);
     }

@@ -19,14 +19,14 @@ class TableInfos {
         $this->setValidationErrors(HttpMethods::getValidationErrors());
     }
 
-    public function getFormInfos($withOldValues = true) {
-        return array_map(function ($columnInfos) use($withOldValues) {
+    public function getFormInfos($labelPrefix = '', $withOldValues = true) {
+        return array_map(function ($columnInfos) use($labelPrefix, $withOldValues) {
             $columnRelation = $this->getColumnRelation($columnInfos);
             if ($columnRelation) {
-                return $columnRelation->getFormInfos($withOldValues);
+                return $columnRelation->getFormInfos($labelPrefix, $withOldValues);
             }
             else {
-                return $columnInfos->getFormInfos($withOldValues);
+                return $columnInfos->getFormInfos($labelPrefix, $withOldValues);
             }
         }, array_values($this->columnInfos));
     }
