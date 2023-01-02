@@ -6,7 +6,7 @@ class DynamicTemplateMethods
 {
     public static function getTemplateDynamicPage($templateTypeName, $templateParams = []) {
         $template = static::getViewTemplate($templateTypeName, $templateParams);
-        return view('dynamicPage', compact('template'));
+        return view('layouts.dynamicPage', compact('template'));
     }
 
     public static function getViewTemplate($templateTypeName, $templateParams = []) {
@@ -18,37 +18,37 @@ class DynamicTemplateMethods
         ];
     }
 
-    public static function getTemplateParamTranslationsFromFile($templateFilePath, $paramSuffix = '') {
+    public static function getTranslatedTemplateParamsFromFile($templateFilePath, $paramPrefix = '') {
         $templateContent = str_replace('export default', '', file_get_contents($templateFilePath));
         $template = json_decode($templateContent, null, 512, JSON_THROW_ON_ERROR);
-        return static::getTemplateParamTranslations($template, $paramSuffix);
+        return static::getTemplateParamTranslations($template, $paramPrefix);
     }
 
-    public static function getTemplateParamTranslations($template, $paramSuffix = '') {
+    public static function getTemplateParamTranslations($template, $paramPrefix = '') {
         $translations = new \stdClass();
-        static::collectTemplateParamTranslations($template, $translations, $paramSuffix);
+        static::collectTemplateParamTranslations($template, $translations, $paramPrefix);
         return $translations;
     }
 
-    public static function collectTemplateParamTranslations($template, $paramTranslations, $paramSuffix = '') {
+    public static function collectTemplateParamTranslations($template, $paramTranslations, $paramPrefix = '') {
         if (is_array($template)) {
             foreach ($template as $templateValue) {
-                static::collectTemplateParamTranslations($templateValue, $paramTranslations, $paramSuffix);
+                static::collectTemplateParamTranslations($templateValue, $paramTranslations, $paramPrefix);
             }
         }
         else if (gettype($template) == 'object') {
             foreach (array_keys(get_object_vars($template)) as $key) {
-                static::collectTemplateParamTranslations($template->$key, $paramTranslations, $paramSuffix);
+                static::collectTemplateParamTranslations($template->$key, $paramTranslations, $paramPrefix);
             }
             return $template;
         }
-        else if (gettype($template) == 'string' && strpos($template, '++') === 0) {
-            $paramName = substr($template, 2);
-            static::collectTemplateParamTranslation($paramName, $paramTranslations, $paramSuffix);
+        else if (gettype($template) == 'string' && strpos($template, '-++') === 0) {
+            $paramName = substr($template, 3);
+            static::collectTemplateParamTranslation($paramName, $paramTranslations, $paramPrefix);
         }
     }
 
-    public static function collectTemplateParamTranslation($paramName, $paramTranslations, $paramSuffix = '') {
+    public static function collectTemplateParamTranslation($paramName, $paramTranslations, $paramPrefix = '') {
         $paramParts = explode('.', $paramName);
         $currentTranslationParent = $paramTranslations;
         $currentTranslation = $paramTranslations;
@@ -60,27 +60,27 @@ class DynamicTemplateMethods
             $currentTranslation = $currentTranslation->$paramPart;
         }
         $partToTranslate = end($paramParts);
-        $currentTranslationParent->$partToTranslate = static::getTranslatedValue($paramName, $paramSuffix);
+        $currentTranslationParent->$partToTranslate = static::getTranslatedValue($paramName, $paramPrefix);
     }
 
-    public static function getTranslatedValue($paramName, $paramSuffix = '') {
-        if ($paramSuffix == '') {
-            return __($paramSuffix . '.' . $paramName);
+    public static function getTranslatedValue($paramName, $paramPrefix = '') {
+        if ($paramPrefix == '') {
+            return __($paramName);
         }
         else {
-            return __($paramSuffix . '.' . $paramName);
+            return __($paramPrefix . '.' . $paramName);
         }
     }
 
-    public static function replaceTemplateParams($template, $paramSuffix = '', $params = []) {
+    public static function replaceTemplateParams($template, $paramPrefix = '', $params = []) {
         if (is_array($template)) {
-            return array_map(function($templateValue) use($params, $paramSuffix) {
-                return static::replaceTemplateParams($templateValue, $paramSuffix, $params);
+            return array_map(function($templateValue) use($params, $paramPrefix) {
+                return static::replaceTemplateParams($templateValue, $paramPrefix, $params);
             }, $template);
         }
         else if (gettype($template) == 'object') {
             foreach (array_keys(get_object_vars($template)) as $key) {
-                $value = static::replaceTemplateParams($template->$key, $paramSuffix, $params);
+                $value = static::replaceTemplateParams($template->$key, $paramPrefix, $params);
                 $template->$key = $value;
             }
             return $template;
@@ -91,7 +91,7 @@ class DynamicTemplateMethods
                 return $params[$paramName];
             }
             else {
-                return __($paramSuffix . '.' . $paramName);
+                return __($paramPrefix . '.' . $paramName);
             }
         }
         else {

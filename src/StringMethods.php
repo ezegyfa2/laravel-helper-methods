@@ -12,4 +12,14 @@ class StringMethods
         }
         return substr($result, 0, strlen($result) - strlen($concatenator));
     }
+
+    public static function shortString(string $text, $maxLength = 50)
+    {
+        if (strlen($text) > $maxLength) {
+            return mb_substr($text, 0, $maxLength, 'UTF-8') . '...';
+        }
+        else {
+            return $text;
+        }
+    }
 }

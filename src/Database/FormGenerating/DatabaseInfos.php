@@ -12,9 +12,125 @@ class DatabaseInfos {
         'updated_at'
     ];
 
+    public static function getSpecificTableInfos(string $tableName, string $filterName = '-') {
+        $tableInfos = static::getTableInfos()[$tableName];
+        $renderColumnNames = static::getConfigGlobalFilterColumnNames($tableName);
+        $renderColumnNames = array_merge($renderColumnNames, static::getConfigFilterColumnNames($tableName, $filterName));
+        $renderColumnNames = array_merge($renderColumnNames, static::getConfigSpecificFilterColumnNames($tableName, $filterName));
+        if (count($renderColumnNames) == 0) {
+            $exceptionColumnNames = static::getConfigGlobalExceptionColumnNames();
+            $exceptionColumnNames = array_merge($exceptionColumnNames, static::getConfigExceptionColumnNames($tableName, $filterName));
+            $exceptionColumnNames = array_merge($exceptionColumnNames, static::getConfigSpecificExceptionColumnNames($tableName, $filterName));
+            $tableInfos->columnInfos = array_filter($tableInfos->columnInfos, function($columnInfo) use($exceptionColumnNames) {
+                return !in_array($columnInfo->name, $exceptionColumnNames);
+            });
+            $tableInfos->relationInfos = array_filter($tableInfos->relationInfos, function($relationInfo) use($exceptionColumnNames) {
+                return !in_array($relationInfo->referenceColumnName, $exceptionColumnNames);
+            });
+        }
+        else {
+            $tableInfos->columnInfos = array_filter($tableInfos->columnInfos, function($columnInfo) use($renderColumnNames) {
+                return in_array($columnInfo->name, $renderColumnNames);
+            });
+            $tableInfos->relationInfos = array_filter($tableInfos->relationInfos, function($relationInfo) use($renderColumnNames) {
+                return in_array($relationInfo->referenceColumnName, $renderColumnNames);
+            });
+        }
+        return $tableInfos;
+    }
+
+    public static function getConfigGlobalFilterColumnNames() {
+        $tableConfigs = \Config::get('database.admin');
+        if (
+            $tableConfigs
+            && array_key_exists('filterColumnNames', $tableConfigs)
+        ) {
+            return $tableConfigs['filterColumnNames'];
+        }
+        else {
+            return [];
+        }
+    }
+
+    public static function getConfigGlobalExceptionColumnNames() {
+        $tableConfigs = \Config::get('database.admin');
+        if (
+            $tableConfigs
+            && array_key_exists('filterExceptionColumnNames', $tableConfigs)
+        ) {
+            return $tableConfigs['filterExceptionColumnNames'];
+        }
+        else {
+            return [];
+        }
+    }
+
+    public static function getConfigFilterColumnNames(string $tableName) {
+        $tableConfigs = \Config::get('database.admin');
+        if (
+            $tableConfigs
+            && array_key_exists($tableName, $tableConfigs)
+            && array_key_exists('filterColumnNames', $tableConfigs[$tableName])
+        ) {
+            return $tableConfigs[$tableName]['filterColumnNames'];
+        }
+        else {
+            return [];
+        }
+    }
+
+    public static function getConfigSpecificFilterColumnNames(string $tableName, string $filterName = '-') {
+        $tableConfigs = \Config::get('database.admin');
+        $fullFilterName = $filterName . 'FilterColumnNames';
+        if (
+            $tableConfigs
+            && array_key_exists($tableName, $tableConfigs)
+            && array_key_exists($fullFilterName, $tableConfigs[$tableName])
+        ) {
+            return $tableConfigs[$tableName][$fullFilterName];
+        }
+        else {
+            return [];
+        }
+    }
+
+
+    public static function getConfigExceptionColumnNames(string $tableName) {
+        $tableConfigs = \Config::get('database.admin');
+        if (
+            $tableConfigs
+            && array_key_exists($tableName, $tableConfigs)
+            && array_key_exists('filterExceptionColumnNames', $tableConfigs[$tableName])
+        ) {
+            return $tableConfigs[$tableName]['filterExceptionColumnNames'];
+        }
+        else {
+            return [];
+        }
+    }
+
+    public static function getConfigSpecificExceptionColumnNames(string $tableName, string $filterName = '-') {
+        $tableConfigs = \Config::get('database.admin');
+        $fullFilterName = $filterName . 'FilterExceptionColumnNames';
+        if (
+            $tableConfigs
+            && array_key_exists($tableName, $tableConfigs)
+            && array_key_exists($fullFilterName, $tableConfigs[$tableName])
+        ) {
+            return $tableConfigs[$tableName][$fullFilterName];
+        }
+        else {
+            return [];
+        }
+    }
+
     public static function getTableInfos() {
         $tableInfos = static::getTableInfosWithoutRelations();
-        $rawRelationInfos = DB::select('SELECT for_name, ref_name, for_col_name, ref_col_name FROM INFORMATION_SCHEMA.INNODB_SYS_FOREIGN INNER JOIN INFORMATION_SCHEMA.INNODB_SYS_FOREIGN_COLS ON INNODB_SYS_FOREIGN.ID = INNODB_SYS_FOREIGN_COLS.ID');
+        $query = 'SELECT for_name, ref_name, for_col_name, ref_col_name '
+            . 'FROM INFORMATION_SCHEMA.INNODB_SYS_FOREIGN '
+            . 'INNER JOIN INFORMATION_SCHEMA.INNODB_SYS_FOREIGN_COLS '
+            . 'ON INNODB_SYS_FOREIGN.ID = INNODB_SYS_FOREIGN_COLS.ID';
+        $rawRelationInfos = DB::select($query);
         $rawRelationInfos = array_filter($rawRelationInfos, function($rawRelationInfo) {
             $referenceTableNameParts = explode('/', $rawRelationInfo->ref_name);
             if (count($referenceTableNameParts) > 0) {
@@ -26,19 +142,30 @@ class DatabaseInfos {
             }
         });
         foreach ($rawRelationInfos as $rawRelationInfo) {
-            $referenceTableName = last(explode('/', $rawRelationInfo->for_name));
-            $relation = new RelationInfos(
+            $tableName = last(explode('/', $rawRelationInfo->for_name));
+            $referenceTableName = last(explode('/', $rawRelationInfo->ref_name));
+            $relationInfo = new RelationColumnInfos(
                 $tableInfos[$referenceTableName],
-                $tableInfos[$referenceTableName]->columnInfos[$rawRelationInfo->for_col_name],
-                $tableInfos[$referenceTableName]->columnInfos[$rawRelationInfo->ref_col_name]
+                $tableInfos[$tableName],
+                $rawRelationInfo->for_col_name
             );
-            $tableInfos[$referenceTableName]->relations[] = $relation;
+
+            $tableInfos[$tableName]->relationInfos[] = $relationInfo;
         }
         return $tableInfos;
     }
 
+    public static function getTableNames() {
+        return array_map(function($tableInfo) {
+            return $tableInfo->name;
+        }, static::getTableInfosWithoutRelations());
+    }
+
     public static function getTableInfosWithoutRelations() {
-        $rawTableInfos = DB::select('SELECT table_name, column_name, column_type, is_nullable, column_default, character_maximum_length, numeric_precision FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '"');
+        $query = 'SELECT table_name, column_name, column_type, is_nullable, column_default, character_maximum_length, numeric_precision '
+            . 'FROM INFORMATION_SCHEMA.COLUMNS '
+            . 'WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '"';
+        $rawTableInfos = DB::select($query);
         $uniques = static::getUniques();
         $tableInfos = [];
         foreach ($rawTableInfos as $rawTableInfo) {
@@ -47,7 +174,7 @@ class DatabaseInfos {
             }
             if (!in_array($rawTableInfo->column_name, static::IGNORED_COLUMN_NAMES)) {
                 $tableInfos[$rawTableInfo->table_name]->columnInfos[$rawTableInfo->column_name] =
-                    new ColumnInfos(
+                    new SimpleColumnInfos(
                         $rawTableInfo->column_name,
                         $rawTableInfo->column_type,
                         $rawTableInfo->is_nullable,
@@ -59,7 +186,15 @@ class DatabaseInfos {
     }
 
     public static function getUniques() {
-        $uniqueRaws = DB::select('SELECT constraint_name, table_name, column_name FROM information_schema.KEY_COLUMN_USAGE WHERE table_schema = "' . \DB::connection()->getDatabaseName() . '";');
+        $uniqueKeysQuery = 'SELECT KEY_COLUMN_USAGE.constraint_name, KEY_COLUMN_USAGE.table_name, KEY_COLUMN_USAGE.column_name '
+            . 'FROM information_schema.KEY_COLUMN_USAGE '
+            . 'INNER JOIN information_schema.TABLE_CONSTRAINTS '
+            . 'ON KEY_COLUMN_USAGE.table_name = TABLE_CONSTRAINTS.table_name '
+            . 'AND KEY_COLUMN_USAGE.constraint_name = TABLE_CONSTRAINTS.constraint_name '
+            . 'AND KEY_COLUMN_USAGE.constraint_schema = TABLE_CONSTRAINTS.table_schema '
+            . 'WHERE KEY_COLUMN_USAGE.table_schema = "' . \DB::connection()->getDatabaseName() . '" '
+            . 'AND TABLE_CONSTRAINTS.constraint_type = "UNIQUE";';
+        $uniqueRaws = DB::select($uniqueKeysQuery);
         $uniques = [];
         foreach ($uniqueRaws as $uniqueRaw) {
             if (!array_key_exists($uniqueRaw->table_name, $uniques)) {
@@ -71,5 +206,12 @@ class DatabaseInfos {
             $uniques[$uniqueRaw->table_name][$uniqueRaw->constraint_name][] = $uniqueRaw->column_name;
         }
         return $uniques;
+    }
+
+    public static function getCrmTableNames() {
+        $configTableNames = array_keys(\Config::get('database.admin'));
+        return array_filter(DatabaseInfos::getTableNames(), function($tableName) use($configTableNames) {
+            return in_array($tableName, $configTableNames);
+        });
     }
 }

@@ -1,0 +1,87 @@
+{
+    "type": "blue-admin-page",
+    "data": {
+        "sidebar_section": {
+            "type": "blue-admin-sidebar",
+            "data": {
+                "brand_section": {
+                    "type": "blue-admin-sidebar-brand-icon",
+                    "data": {
+                        "url": "/",
+                        "icon_class": "fas fa-laugh-wink",
+                        "content": "-++sidebar.title",
+                        "toggled": false
+                    }
+                },
+                "navigation_link_group_sections": {
+                    "failed_jobs": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/failed_jobs",
+                            "icon_class": "",
+                            "content": "failed_jobs"
+                        }
+                    },
+                    "icon_classes": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/icon_classes",
+                            "icon_class": "",
+                            "content": "icon_classes"
+                        }
+                    },
+                    "migrations": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/migrations",
+                            "icon_class": "",
+                            "content": "migrations"
+                        }
+                    },
+                    "notifications": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/notifications",
+                            "icon_class": "",
+                            "content": "notifications"
+                        }
+                    },
+                    "password_resets": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/password_resets",
+                            "icon_class": "",
+                            "content": "password_resets"
+                        }
+                    },
+                    "personal_access_tokens": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/personal_access_tokens",
+                            "icon_class": "",
+                            "content": "personal_access_tokens"
+                        }
+                    },
+                    "table_icon_classes": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/table_icon_classes",
+                            "icon_class": "",
+                            "content": "table_icon_classes"
+                        }
+                    },
+                    "users": {
+                        "type": "blue-admin-sidebar-navigation-link",
+                        "data": {
+                            "url": "/users",
+                            "icon_class": "fas fa-users",
+                            "content": "users"
+                        }
+                    }
+                }
+            }
+        },
+        "navigation_bar_section": null,
+        "content_sections": []
+    }
+}

@@ -3,12 +3,8 @@
 namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
 class TableViewValues {
-    protected static $viewColumnNames = [
-        'contact_us' => [ 'email', 'name' ],
-    ];
-
-    public static function getTableHyphenViewValues($tableName) {
-        $viewData = static::getTableViewData($tableName);
+    public static function getTableHyphenViewValues($tableName, $viewColumnNames) {
+        $viewData = static::getTableViewData($tableName, $viewColumnNames);
         return array_map(function($rowData) {
             return [
                 'id' => $rowData->id,
@@ -17,8 +13,8 @@ class TableViewValues {
         }, $viewData);
     }
 
-    public static function getTableViewData($tableName) {
-        $columnsToSelect = static::$viewColumnNames[$tableName];
+    public static function getTableViewData($tableName, $viewColumnNames) {
+        $columnsToSelect = $viewColumnNames[$tableName];
         $columnsToSelect[] = 'id';
         return \DB::table($tableName)->select($columnsToSelect)->get()->toArray();
     }
