@@ -4,6 +4,7 @@ namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Ezegyfa\LaravelHelperMethods\Database\HelperTableMethods;
 
 class DatabaseInfos {
     public const IGNORED_COLUMN_NAMES = [
@@ -127,10 +128,10 @@ class DatabaseInfos {
     public static function getTableInfos() {
         $tableInfos = static::getTableInfosWithoutRelations();
         $query = 'SELECT for_name, ref_name, for_col_name, ref_col_name '
-            . 'FROM INFORMATION_SCHEMA.INNODB_SYS_FOREIGN '
-            . 'INNER JOIN INFORMATION_SCHEMA.INNODB_SYS_FOREIGN_COLS '
-            . 'ON INNODB_SYS_FOREIGN.ID = INNODB_SYS_FOREIGN_COLS.ID';
-        $rawRelationInfos = DB::select($query);
+            . 'FROM INFORMATION_SCHEMA.INNODB_FOREIGN '
+            . 'INNER JOIN INFORMATION_SCHEMA.INNODB_FOREIGN_COLS '
+            . 'ON INNODB_FOREIGN.ID = INNODB_FOREIGN_COLS.ID';
+        $rawRelationInfos = HelperTableMethods::select($query);
         $rawRelationInfos = array_filter($rawRelationInfos, function($rawRelationInfo) {
             $referenceTableNameParts = explode('/', $rawRelationInfo->ref_name);
             if (count($referenceTableNameParts) > 0) {
@@ -165,7 +166,7 @@ class DatabaseInfos {
         $query = 'SELECT table_name, column_name, column_type, is_nullable, column_default, character_maximum_length, numeric_precision '
             . 'FROM INFORMATION_SCHEMA.COLUMNS '
             . 'WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '"';
-        $rawTableInfos = DB::select($query);
+        $rawTableInfos = HelperTableMethods::select($query);
         $uniques = static::getUniques();
         $tableInfos = [];
         foreach ($rawTableInfos as $rawTableInfo) {
@@ -194,7 +195,7 @@ class DatabaseInfos {
             . 'AND KEY_COLUMN_USAGE.constraint_schema = TABLE_CONSTRAINTS.table_schema '
             . 'WHERE KEY_COLUMN_USAGE.table_schema = "' . \DB::connection()->getDatabaseName() . '" '
             . 'AND TABLE_CONSTRAINTS.constraint_type = "UNIQUE";';
-        $uniqueRaws = DB::select($uniqueKeysQuery);
+        $uniqueRaws = HelperTableMethods::select($uniqueKeysQuery);
         $uniques = [];
         foreach ($uniqueRaws as $uniqueRaw) {
             if (!array_key_exists($uniqueRaw->table_name, $uniques)) {
