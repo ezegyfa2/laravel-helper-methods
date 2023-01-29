@@ -17,11 +17,8 @@ class SimpleColumnInfos extends ColumnInfos {
 
     public function getFormInfos(string $labelPrefix = '', $withOldValues = null, $value = null) {
         $formInfos = $this->getSpecificFormInfos($labelPrefix, $withOldValues, $value);
-        if ($this->name == 'email') {
-            $formInfos['data']['type'] = 'email';
-        }
-        else if ($this->name == 'phone' || $this->name == 'telephone') {
-            $formInfos['data']['type'] = 'tel';
+        if ($this->name == 'phone' || $this->name == 'telephone') {
+            $formInfos['type'] = 'phone-input';
         }
         $formInfos['data'] = (object)$formInfos['data'];
         return (object)$formInfos;
@@ -34,7 +31,6 @@ class SimpleColumnInfos extends ColumnInfos {
             return [
                 'type' => 'email-input',
                 'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([
-                    'form_item_type' => 'input',
                     'maxlength' => $this->getLength(),
                     'minlength' => 0,
                 ], $translationPrefix)),
@@ -50,9 +46,7 @@ class SimpleColumnInfos extends ColumnInfos {
                         unset($formInfos['required']);
                         return [
                             'type' => 'checkbox-input',
-                            'data' => array_merge($formInfos, [
-                                'type' => 'checkbox',
-                            ]),
+                            'data' => $formInfos,
                         ];
                     }
                     else {
@@ -68,7 +62,6 @@ class SimpleColumnInfos extends ColumnInfos {
                     return [
                         'type' => 'text-input',
                         'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([
-                            'form_item_type' => 'input',
                             'maxlength' => $this->getLength(),
                             'minlength' => 0,
                         ], $translationPrefix)),
@@ -182,6 +175,46 @@ class SimpleColumnInfos extends ColumnInfos {
                 return array_merge($validator, ['date']);
             case 'timestamp':
                 return array_merge($validator, ['date_format:Y-m-d H:i']);
+            default:
+                throw new \Exception("Invalid database column type");
+        }
+    }
+
+    public function getFilterFormInfos(string $translationPrefix = '') {
+        $filterFormInfos = parent::getFilterFormInfos($translationPrefix);
+        switch ($this->getDataType()) {
+            case 'int':
+            case 'bigint':
+            case 'decimal':
+            case 'tinyint':
+                if ($this->getLength() == 1) {
+                    return [
+                        'type' => 'checkbox-input',
+                        'data' => $filterFormInfos,
+                    ];
+                }
+                else {
+                    return [
+                        'type' => 'number-input',
+                        'data' => $filterFormInfos,
+                    ];
+                }
+            case 'varchar':
+            case 'text':
+                return [
+                    'type' => 'text-input',
+                    'data' => $filterFormInfos,
+                ];
+            case 'date':
+                return [
+                    'type' => 'date-input',
+                    'data' => $filterFormInfos,
+                ];
+            case 'timestamp':
+                return [
+                    'type' => 'datetime-input',
+                    'data' => $filterFormInfos,
+                ];
             default:
                 throw new \Exception("Invalid database column type");
         }

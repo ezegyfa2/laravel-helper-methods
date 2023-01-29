@@ -10,9 +10,10 @@ class HelperTableMethods
 {
     public static function createHelperTable(array $baseTableNames, string $resultTableName) {
         \DB::statement(static::getCreateTableQuery($baseTableNames, $resultTableName));
-        dd('asd');
         foreach ($baseTableNames as $baseTableName) {
-            \DB::statement(static::getCreateTriggerQuery($baseTableName, $resultTableName));
+            \DB::statement('DELIMITER $$');
+            \DB::statement(static::getCreateInsertTriggerQuery($baseTableNames, $baseTableName, $resultTableName));
+            \DB::statement('DELIMITER ;');
         }
     }
 
@@ -24,6 +25,38 @@ class HelperTableMethods
         $query .= StringMethods::concatenateStrings($columnParts, ', ');
         $query .= ', PRIMARY KEY (`id`))';
         return $query;
+    }
+
+    protected static function getCreateInsertTriggerQuery(array $baseTableNames, string $triggerTableName, string $resultTableName) {
+        $triggerName = $resultTableName . '__' . $triggerTableName . '_insert';
+        $columnNames = StringMethods::concatenateStrings(static::getColumnNames($baseTableNames), ', ');
+        $columnValues = StringMethods::concatenateStrings(static::getColumnValues($baseTableNames, $triggerTableName), ', ');
+        return ' CREATE TRIGGER ' . $triggerName . ";"
+            . ' AFTER INSERT' . ";"
+            . ' ON ' . $triggerTableName . ' FOR EACH ROW' . ";"
+            . ' BEGIN' . ";"
+            . ' INSERT INTO test(' . $columnNames . ') VALUES(' . $columnValues . ');' . ";"
+            . ' END$$' . ";";
+    }
+
+    protected static function getColumnValues(array $baseTableNames, string $insertTableName) {
+        $columnNames = static::getColumnNames($baseTableNames);
+        $insertColumnNames = static::getColumnNames([ $insertTableName ]);
+        return array_map(function($columnName) use($insertTableName, $insertColumnNames) {
+            if (in_array($columnName, $insertColumnNames)) {
+                $insertedColumnName = str_replace($insertTableName . '__', '', $columnName);
+                return 'NEW.' . $insertedColumnName;
+            }
+            else {
+                return 'null';
+            }
+        }, $columnNames);
+    }
+
+    protected static function getColumnNames(array $baseTableNames) {
+        return array_map(function($columnInfo) {
+            return $columnInfo->name;
+        }, static::getColumnInfos($baseTableNames));
     }
 
     protected static function getColumnInfos(array $baseTableNames) {
@@ -42,17 +75,5 @@ class HelperTableMethods
             array_push($helperColumnInfos, $idColumnInfo);
         }
         return $helperColumnInfos;
-    }
-
-    protected static function getCreateTriggerQuery(string $baseTableName, string $resultTableName) {
-        $triggerName = $resultTableName . '__' . $baseTableName . '_insert';
-        return 'DELIMITER $$'
-            . ' CREATE TRIGGER ' . $triggerName
-            . ' AFTER INSERT'
-            . ' ON ' . $baseTableName . ' FOR EACH ROW'
-            . ' BEGIN'
-            . ' INSERT INTO test(product_details__stock) VALUES(3);'
-            . ' END$$'
-            . ' DELIMITER ;';
     }
 }

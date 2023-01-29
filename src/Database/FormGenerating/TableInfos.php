@@ -87,6 +87,18 @@ class TableInfos {
         return $rule;
     }
 
+    public function getFilterFormInfos() {
+        return array_map(function ($columnInfos) {
+            $columnRelation = $this->getColumnRelation($columnInfos);
+            if ($columnRelation) {
+                return $columnRelation->getFilterFormInfos();
+            }
+            else {
+                return $columnInfos->getFilterFormInfos();
+            }
+        }, array_values($this->columnInfos));
+    }
+
     public function setValidationErrors($validationErrors) {
         foreach ($validationErrors as $inputName => $inputErrors) {
             if (array_key_exists($inputName, $this->columnInfos)) {

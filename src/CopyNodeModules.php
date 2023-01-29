@@ -65,7 +65,7 @@ class CopyNodeModules extends Command
         if (file_exists($targetNodeFolderPath)) {
             FolderMethods::deleteFolder($targetNodeFolderPath);
         }
-        FolderMethods::copyFolder($modulePath, $targetNodeFolderPath, [ '.git', '.gitignore' ]);
+        FolderMethods::copyFolder($modulePath, $targetNodeFolderPath, [ '.git', '.gitignore', '.vscode' ]);
         $gitFilePath = $targetNodeFolderPath . '\\.git';
         if (file_exists($gitFilePath)) {
             FolderMethods::deleteFolder($gitFilePath);
