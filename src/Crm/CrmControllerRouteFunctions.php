@@ -55,6 +55,7 @@ trait CrmControllerRouteFunctions
 
     public function getIndexView(string $tableName)
     {
+        $this->getData($tableName);
         $templateParams = $this->getLayoutTemplateParams($tableName);
         $templateParams->table_data = $this->getTableData($tableName);
         return DynamicTemplateMethods::getTemplateDynamicPage($this->indexTemplateName, $templateParams);
@@ -68,7 +69,7 @@ trait CrmControllerRouteFunctions
             'title' => $tableName,
             'row_to_show_counts' => [ 10, 25, 50 ],
             'selected_row_to_show_count' => $selectedRowToShowCount,
-            'selected_page_number' => $selectedPageNumber
+            'selected_page_number' => $selectedPageNumber,
         ];
     }
 
@@ -113,7 +114,8 @@ trait CrmControllerRouteFunctions
         return response()->json((object) [
             'total_row_count' => $totalRowCount,
             'column_names' => $columnNames,
-            'rows' => $rows
+            'rows' => $rows,
+            'filter_sections' => $tableInfos->getFilterFormInfos()
         ]);
     }
 

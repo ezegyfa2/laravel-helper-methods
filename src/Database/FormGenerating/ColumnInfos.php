@@ -79,6 +79,13 @@ class ColumnInfos {
         $this->validationErrors = [];
     }
 
+    public function getFilterFormInfos(string $translationPrefix = '') {
+        return [
+            'name' => $this->name,
+            'label' => __($translationPrefix .  '.label.' . $this->name),
+        ];
+    }
+
     public static function convertIsNull($isNull) {
         if (gettype($isNull) == 'boolean') {
             return $isNull;

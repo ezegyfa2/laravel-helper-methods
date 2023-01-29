@@ -33,6 +33,15 @@ class RelationColumnInfos extends ColumnInfos {
         ];
     }
 
+    public function getFilterFormInfos(string $translationPrefix = '') {
+        return (object)[
+            'type' => 'select',
+            'data' => (object)array_merge(parent::getFormInfos($translationPrefix), [
+                'options' => $this->getOptions(),
+            ])
+        ];
+    }
+
     public function getOptions() {
         if ($this->optionCreator) {
             $rows = \DB::table($this->referencedTableInfos->name)->select()->get();
