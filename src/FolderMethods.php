@@ -10,7 +10,8 @@ class FolderMethods
         $subFolders = static::getFolderSubFolders($folderPath);
         $folderFiles = array_diff($folderFiles, $subFolders);
         foreach ($subFolders as $subFolder) {
-            $folderFiles = array_merge($folderFiles, static::getFolderFilesRecoursively($folderPath . '\\' . $subFolder));
+            $subFolderPath = static::combinePaths($folderPath, $subFolder);
+            $folderFiles = array_merge($folderFiles, static::getFolderFilesRecoursively($subFolderPath));
         }
         return array_values($folderFiles);
     }
@@ -19,7 +20,7 @@ class FolderMethods
     {
         $folderFiles = static::getFolderFiles($folderPath);
         $subFolders = array_values(array_filter($folderFiles, function($nodeFolderFile) use($folderPath) {
-            return is_dir($folderPath . '\\' . $nodeFolderFile);
+            return is_dir(static::combinePaths($folderPath, $nodeFolderFile));
         }));
         return $subFolders;
     }
@@ -32,15 +33,17 @@ class FolderMethods
         return array_values($folderFiles);
     }
 
-    public static function copyFolder($src, $dst, $exceptions = []) {
-        $dir = opendir($src);
-        @mkdir($dst);
+    public static function copyFolder($sourceFolderPath, $destinationFolderPath, $exceptions = []) {
+        $dir = opendir($sourceFolderPath);
+        @mkdir($destinationFolderPath);
         while($file = readdir($dir)) {
             if ($file != '.' && $file != '..' && !in_array($file, $exceptions)) {
-                if (is_dir($src . '\\' . $file)) {
-                    static::copyFolder($src .'\\'. $file, $dst .'\\'. $file);
+                $sourcePath = static::combinePaths($sourceFolderPath, $file);
+                $destinationPath = static::combinePaths($destinationFolderPath, $file);
+                if (is_dir($sourcePath)) {
+                    static::copyFolder($sourcePath, $destinationPath);
                 } else {
-                    copy($src .'/'. $file, $dst .'/'. $file);
+                    copy($sourcePath, $destinationPath);
                 }
             }
         }
@@ -50,14 +53,19 @@ class FolderMethods
     public static function deleteFolder($dir) {
         $files = array_diff(scandir($dir), array('.','..'));
         foreach ($files as $file) {
-            if (is_dir("$dir\\$file")) {
-                static::deleteFolder("$dir\\$file");
+            $path = static::combinePaths($dir, $file);
+            if (is_dir($path)) {
+                static::deleteFolder($path);
             }
             else {
-                chmod("$dir\\$file", 0777);
-                unlink("$dir\\$file");
+                chmod($path, 0777);
+                unlink($path);
             }
         }
         return rmdir($dir);
+    }
+
+    public static function combinePaths(string $path1, string $path2) {
+        return str_replace('\\', '/', $path1 . '/' . $path2);
     }
 }
