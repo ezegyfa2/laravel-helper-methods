@@ -38,14 +38,14 @@ class CopyNodeModules extends Command
     public function handle()
     {
         $this->copyNodeModules(config('app.node_modules_folder_path'));
-        $this->copyModule(config('app.laravel_methods_folder_path'), 'vendor\ezegyfa');
+        $this->copyModule(config('app.laravel_methods_folder_path'), 'vendor/ezegyfa');
         return 0;
     }
 
     public function copyNodeModules($nodeRootFolderPath) {
-        $vueFolderPath = $nodeRootFolderPath . '\Vue';
+        $vueFolderPath = $nodeRootFolderPath . '/Vue';
         $this->copyModules($vueFolderPath, 'node_modules');
-        $this->copyModule($nodeRootFolderPath . '\js-helper-methods', 'node_modules');
+        $this->copyModule($nodeRootFolderPath . '/js-helper-methods', 'node_modules');
         if (!$this->option('nonpm')) {
             shell_exec('npm run dev');
         }
@@ -54,23 +54,23 @@ class CopyNodeModules extends Command
     public function copyModules(string $sourceFolderPath, string $moduleFolderName) {
         $subFolderNames = FolderMethods::getFolderSubFolders($sourceFolderPath);
         foreach ($subFolderNames as $subFolderName) {
-            $this->copyModule($sourceFolderPath . '\\' . $subFolderName, 'node_modules');
+            $this->copyModule($sourceFolderPath . '/' . $subFolderName, $moduleFolderName);
         }
     }
 
     public function copyModule(string $modulePath, string $moduleFolderName) {
-        $targetNodeRootFolderPath = base_path() . '\\' . $moduleFolderName;
+        $targetNodeRootFolderPath = base_path() . '/' . $moduleFolderName;
         $nodeFolder = basename($modulePath);
-        $targetNodeFolderPath = $targetNodeRootFolderPath . '\\' . $nodeFolder;
+        $targetNodeFolderPath = $targetNodeRootFolderPath . '/' . $nodeFolder;
         if (file_exists($targetNodeFolderPath)) {
             FolderMethods::deleteFolder($targetNodeFolderPath);
         }
         FolderMethods::copyFolder($modulePath, $targetNodeFolderPath, [ '.git', '.gitignore', '.vscode' ]);
-        $gitFilePath = $targetNodeFolderPath . '\\.git';
+        $gitFilePath = $targetNodeFolderPath . '/.git';
         if (file_exists($gitFilePath)) {
             FolderMethods::deleteFolder($gitFilePath);
         }
-        $gitignoreFilePath = $targetNodeFolderPath . '\\.gitignore';
+        $gitignoreFilePath = $targetNodeFolderPath . '/.gitignore';
         if (file_exists($gitignoreFilePath)) {
             chmod($gitignoreFilePath, 0777);
             unlink($gitignoreFilePath);
