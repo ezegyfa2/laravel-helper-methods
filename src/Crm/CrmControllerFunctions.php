@@ -11,12 +11,17 @@ trait CrmControllerFunctions
 
     public function getTableIconClasses()
     {
-        $rawIconClasses = \DB::table('table_icon_classes')->select(['table_name', 'icon_class'])->get();
-        $iconClasses = [];
-        foreach ($rawIconClasses as $rawIconClass) {
-            $iconClasses[$rawIconClass->table_name] = $rawIconClass->icon_class;
+        if (\Schema::hasTable('mytable')) {
+            $rawIconClasses = \DB::table('table_icon_classes')->select(['table_name', 'icon_class'])->get();
+            $iconClasses = [];
+            foreach ($rawIconClasses as $rawIconClass) {
+                $iconClasses[$rawIconClass->table_name] = $rawIconClass->icon_class;
+            }
+            return $iconClasses;
         }
-        return $iconClasses;
+        else {
+            return [];
+        }
     }
 
     private $iconClasses = null;

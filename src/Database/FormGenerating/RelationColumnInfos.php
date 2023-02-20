@@ -34,11 +34,12 @@ class RelationColumnInfos extends ColumnInfos {
     }
 
     public function getFilterFormInfos(string $translationPrefix = '') {
+        $formInfoData = parent::getFormInfos($translationPrefix);
+        $formInfoData['options'] = $this->getOptions();
+        $formInfoData = $this->setFilterFormInfoValue($formInfoData, 'value');
         return (object)[
             'type' => 'select',
-            'data' => (object)array_merge(parent::getFormInfos($translationPrefix), [
-                'options' => $this->getOptions(),
-            ])
+            'data' => $formInfoData
         ];
     }
 
@@ -134,5 +135,22 @@ class RelationColumnInfos extends ColumnInfos {
 
     public function getReferenceTableName() {
         return $this->referencedTableInfos->name;
+    }
+
+    public function addFilterToQuery($tableName, $query, $filters) {
+        if (array_key_exists($this->name, $filters) && array_key_exists('value', $filters[$this->name])) {
+            $query->where($tableName . '.' . $filters[$this->name]['name'], $filters[$this->name]['value']);
+        }
+    }
+
+    public function addJoinToQuery($tableName, $query) {
+        $query->leftJoin($this->getReferenceTableName(), $tableName . '.' . $this->referenceColumnName, $this->getReferenceTableName() . '.id');
+    }
+
+    public function getColumnNameWithTableName($tableName) {
+        $renderColumnNames = array_map(function($columnName) {
+            return $tableName . '.' . $columnName;
+        }, $this->getRenderColumnNames());
+        return 'CONCAT(' . StringMethods::concatenateStrings($renderColumnNames, ", ' - '") . ') AS ' . $this->referenceColumnName;
     }
 }

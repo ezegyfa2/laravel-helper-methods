@@ -19,7 +19,7 @@ class BlueAdminController
             return (object)[
                 'type' => 'blue-admin-sidebar-navigation-link',
                 'data' => (object)[
-                    'url' => '/' . $tableName,
+                    'url' => '/admin/' . $tableName,
                     'icon_class' => $this->getIconClass($tableName),
                     'content' => str_replace('_', ' ', $tableName)
                 ]

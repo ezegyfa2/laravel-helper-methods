@@ -86,6 +86,13 @@ class ColumnInfos {
         ];
     }
 
+    protected function setFilterFormInfoValue($filterFormInfos, $valueName) {
+        if (request()->get('filter-data') && array_key_exists($this->name, request()->get('filter-data')) && array_key_exists($valueName, request()->get('filter-data')[$this->name])) {
+            $filterFormInfos[$valueName] = request()->get('filter-data')[$this->name][$valueName];
+        }
+        return $filterFormInfos;
+    }
+
     public static function convertIsNull($isNull) {
         if (gettype($isNull) == 'boolean') {
             return $isNull;

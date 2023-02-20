@@ -7,14 +7,15 @@ use Illuminate\Support\Facades\DB;
 use Ezegyfa\LaravelHelperMethods\Database\HelperTableMethods;
 
 class DatabaseInfos {
-    public const IGNORED_COLUMN_NAMES = [
+    public const DEFAULT_IGNORED_COLUMN_NAMES = [
         'id',
         'created_at',
         'updated_at'
     ];
 
-    public static function getSpecificTableInfos(string $tableName, string $filterName = '-') {
-        $tableInfos = static::getTableInfos()[$tableName];
+    // In the filterName we can set what columns will be render in the current page (eg: index, edit etc.)
+    public static function getSpecificTableInfos(string $tableName, string $filterName = '-', array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
+        $tableInfos = static::getTableInfos($ignoredColumnNames)[$tableName];
         $renderColumnNames = static::getConfigGlobalFilterColumnNames($tableName);
         $renderColumnNames = array_merge($renderColumnNames, static::getConfigFilterColumnNames($tableName, $filterName));
         $renderColumnNames = array_merge($renderColumnNames, static::getConfigSpecificFilterColumnNames($tableName, $filterName));
@@ -95,7 +96,6 @@ class DatabaseInfos {
         }
     }
 
-
     public static function getConfigExceptionColumnNames(string $tableName) {
         $tableConfigs = \Config::get('database.admin');
         if (
@@ -125,8 +125,8 @@ class DatabaseInfos {
         }
     }
 
-    public static function getTableInfos() {
-        $tableInfos = static::getTableInfosWithoutRelations();
+    public static function getTableInfos(array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
+        $tableInfos = static::getTableInfosWithoutRelations($ignoredColumnNames);
         $query = 'SELECT for_name, ref_name, for_col_name, ref_col_name '
             . 'FROM INFORMATION_SCHEMA.INNODB_FOREIGN '
             . 'INNER JOIN INFORMATION_SCHEMA.INNODB_FOREIGN_COLS '
@@ -156,13 +156,28 @@ class DatabaseInfos {
         return $tableInfos;
     }
 
+    public static function getCrmTableNames() {
+        return array_filter(DatabaseInfos::getTableNames(), function($tableName) {
+            return in_array($tableName, static::getConfigTableNames());
+        });
+    }
+
+    public static function getConfigTableNames() {
+        if (\Config::get('database.admin')) {
+            return array_keys(\Config::get('database.admin'));
+        }
+        else {
+            return [];
+        }
+    }
+
     public static function getTableNames() {
         return array_map(function($tableInfo) {
             return $tableInfo->name;
         }, static::getTableInfosWithoutRelations());
     }
 
-    public static function getTableInfosWithoutRelations() {
+    public static function getTableInfosWithoutRelations(array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
         $query = 'SELECT table_name, column_name, column_type, is_nullable, column_default, character_maximum_length, numeric_precision '
             . 'FROM INFORMATION_SCHEMA.COLUMNS '
             . 'WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '"';
@@ -173,17 +188,32 @@ class DatabaseInfos {
             if (!isset($tableInfos[$rawTableInfo->table_name])) {
                 $tableInfos[$rawTableInfo->table_name] = new TableInfos($rawTableInfo->table_name, [], [], $uniques[$rawTableInfo->table_name] ?? []);
             }
-            if (!in_array($rawTableInfo->column_name, static::IGNORED_COLUMN_NAMES)) {
+            if (!in_array($rawTableInfo->column_name, $ignoredColumnNames)) {
                 $tableInfos[$rawTableInfo->table_name]->columnInfos[$rawTableInfo->column_name] =
                     new SimpleColumnInfos(
                         $rawTableInfo->column_name,
-                        $rawTableInfo->column_type,
+                        static::getColumnType($rawTableInfo),
                         $rawTableInfo->is_nullable,
                         $rawTableInfo->column_default
                     );
             }
         }
         return $tableInfos;
+    }
+
+    public static function getColumnType($rawTableInfo) {
+        if (str_contains($rawTableInfo->column_type, '(')) {
+            return $rawTableInfo->column_type;
+        }
+        else if ($rawTableInfo->character_maximum_length) {
+            return $rawTableInfo->column_type . '(' . $rawTableInfo->character_maximum_length . ')';
+        }
+        else if ($rawTableInfo->numeric_precision) {
+            return $rawTableInfo->column_type . '(' . $rawTableInfo->numeric_precision . ')';
+        }
+        else {
+            throw new \Exception('Invalid column type');
+        }
     }
 
     public static function getUniques() {
@@ -207,12 +237,5 @@ class DatabaseInfos {
             $uniques[$uniqueRaw->table_name][$uniqueRaw->constraint_name][] = $uniqueRaw->column_name;
         }
         return $uniques;
-    }
-
-    public static function getCrmTableNames() {
-        $configTableNames = array_keys(\Config::get('database.admin'));
-        return array_filter(DatabaseInfos::getTableNames(), function($tableName) use($configTableNames) {
-            return in_array($tableName, $configTableNames);
-        });
     }
 }

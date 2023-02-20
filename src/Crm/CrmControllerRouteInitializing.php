@@ -21,6 +21,7 @@ trait CrmControllerRouteInitializing
             if (in_array($tableName, $controllerTableNames)) {
                 $controllerName = array_search($tableName, $controllerTableNames);
                 $indexFunction = $controllerName . '@index';
+                $filterFunction = $controllerName . '@filter';
                 $createFunction = $controllerName . '@create';
                 $storeFunction = $controllerName . '@store';
                 $editFunction = $controllerName . '@edit';
@@ -32,6 +33,9 @@ trait CrmControllerRouteInitializing
             }
             else {
                 $indexFunction = function() use($tableName) {
+                    return $this->getIndexView($tableName);
+                };
+                $filterFunction = function() use($tableName) {
                     return $this->getIndexView($tableName);
                 };
                 $createFunction = function() use($tableName) {
@@ -60,21 +64,23 @@ trait CrmControllerRouteInitializing
                 };*/
             }
             Route::group([
-                'prefix' => $tableName
-            ], function () use($tableName, $indexFunction, $createFunction, $storeFunction, $editFunction, $updateFunction, $destroyFunction, $getDataFunction) {
+                'prefix' => 'admin/' . $tableName
+            ], function () use($tableName, $indexFunction, $filterFunction, $createFunction, $storeFunction, $editFunction, $updateFunction, $destroyFunction, $getDataFunction) {
                 Route::get('/', $indexFunction)
                     ->name($tableName . '.index');
+                Route::post('/', $filterFunction)
+                    ->name($tableName . '.filter');
                 Route::get('/create', $createFunction)
                     ->name($tableName . '.create');
-                Route::post('/', $storeFunction)
+                Route::post('/store', $storeFunction)
                     ->name($tableName . '.store');
                 Route::get('/edit/{id}', $editFunction)
                     ->name($tableName . '.edit')
                     ->where('id', '[0-9]+');
-                Route::post('/{id}', $updateFunction)
+                Route::post('/update/{id}', $updateFunction)
                     ->name($tableName . '.update')
                     ->where('id', '[0-9]+');
-                Route::get('/get-data', $getDataFunction)
+                Route::post('/get-data', $getDataFunction)
                     ->name($tableName . '.get_data');
                 Route::delete('/{id}', $destroyFunction)
                     ->name($tableName . '.destroy')
