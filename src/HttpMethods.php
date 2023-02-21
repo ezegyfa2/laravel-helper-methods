@@ -11,37 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 class HttpMethods
 {
-    public static function registerDesignerRoute() {
-        $templatePath = base_path('app/templates/designed.json');
-        Route::post('/designer', function() use($templatePath) {
-            file_put_contents($templatePath, request()->input()['designedTemplate'], JSON_PRETTY_PRINT);
-        });
-        /*Route::post('/designer-with-translate', function() use($templatePath) {
-            $translateTemplatePath = base_path('node_modules/web-page-designer-vue-components/src/Templates/Designed/designed.js');
-            file_put_contents($translateTemplatePath, 'export default ' . request()->input()['designedTemplate']);
-            file_put_contents($templatePath, request()->input()['designedTemplate'], JSON_PRETTY_PRINT);
-            shell_exec('npm run dev');
-        });*/
-        Route::get('/designer', function() use($templatePath) {
-            $lastSave = json_decode(file_get_contents($templatePath));
-            $template = (object) [
-                'type' => 'web-designer-page-designer',
-                'data' => (object) [
-                    'template' => $lastSave,
-                ],
-            ];
-            return view('layouts.dynamicPage', compact('template'));
-        });
-        Route::get('/designer-result', function () use($templatePath) {
-            $template = file_get_contents($templatePath);
-            return view('layouts.dynamicPage', compact('template'));
-        });
-        /*Route::get('/translated-designer-result', function () use($templatePath) {
-            $templateParams = DynamicTemplateMethods::getTranslatedTemplateParamsFromFile($templatePath);
-            return DynamicTemplateMethods::getTemplateDynamicPage('web-designer-designed-page', $templateParams);
-        });*/
-    }
-
     public static function getFormResponseFromException(Exception $e) {
         return response([
             'message' => $e->getMessage(),
