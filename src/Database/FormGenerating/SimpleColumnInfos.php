@@ -38,26 +38,23 @@ class SimpleColumnInfos extends ColumnInfos {
         }
         else {
             switch ($this->getDataType()) {
+                case 'bit':
+                    unset($formInfos['required']);
+                    return [
+                        'type' => 'checkbox-input',
+                        'data' => $formInfos,
+                    ];
                 case 'int':
                 case 'bigint':
                 case 'decimal':
                 case 'tinyint':
-                    if ($this->getLength() == 1) {
-                        unset($formInfos['required']);
-                        return [
-                            'type' => 'checkbox-input',
-                            'data' => $formInfos,
-                        ];
-                    }
-                    else {
-                        return [
-                            'type' => 'number-input',
-                            'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([
-                                'max' => $this->getMaxFromLength(),
-                                'min' => $this->getMinFromLength(),
-                            ], $translationPrefix)),
-                        ];
-                    }
+                    return [
+                        'type' => 'number-input',
+                        'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([
+                            'max' => $this->getMaxFromLength(),
+                            'min' => $this->getMinFromLength(),
+                        ], $translationPrefix)),
+                    ];
                 case 'varchar':
                     return [
                         'type' => 'text-input',
@@ -144,26 +141,23 @@ class SimpleColumnInfos extends ColumnInfos {
     public function getValidatorWithTypeValues() {
         $validator = parent::getValidator();
         switch ($this->getDataType()) {
+            case 'bit':
+                unset($validator['required']);
+                $validator = array_filter($validator, function($validatorValue) {
+                    return $validatorValue != 'required';
+                });
+                return array_merge($validator, [
+                    'boolean',
+                ]);
             case 'int':
             case 'bigint':
             case 'decimal':
             case 'tinyint':
-                if ($this->getLength() == 1) {
-                    unset($validator['required']);
-                    $validator = array_filter($validator, function($validatorValue) {
-                        return $validatorValue != 'required';
-                    });
-                    return array_merge($validator, [
-                        'boolean',
-                    ]);
-                }
-                else {
-                    return array_merge($validator, [
-                        'int',
-                        'max:' . $this->getMaxFromLength(),
-                        'min:' . $this->getMinFromLength(),
-                    ]);
-                }
+                return array_merge($validator, [
+                    'int',
+                    'max:' . $this->getMaxFromLength(),
+                    'min:' . $this->getMinFromLength(),
+                ]);
             case 'varchar':
                 return array_merge($validator, [
                     'string',
@@ -181,42 +175,106 @@ class SimpleColumnInfos extends ColumnInfos {
     }
 
     public function getFilterFormInfos(string $translationPrefix = '') {
-        $filterFormInfos = parent::getFilterFormInfos($translationPrefix);
         switch ($this->getDataType()) {
+            case 'bit':
+                return [
+                    'type' => 'checkbox-input',
+                    'data' => $this->getFilterFormInfosWithValue(),
+                ];
             case 'int':
             case 'bigint':
             case 'decimal':
             case 'tinyint':
-                if ($this->getLength() == 1) {
-                    return [
-                        'type' => 'checkbox-input',
-                        'data' => $filterFormInfos,
-                    ];
+                $filterFormInfos = $this->getFilterFormInfosWithFromToValue();
+                if (array_key_exists('from_value', $filterFormInfos)) {
+                    $filterFormInfos['from_value'] = (int)$filterFormInfos['from_value'];
                 }
-                else {
-                    return [
-                        'type' => 'number-input',
-                        'data' => $filterFormInfos,
-                    ];
+                if (array_key_exists('to_value', $filterFormInfos)) {
+                    $filterFormInfos['to_value'] = (int)$filterFormInfos['to_value'];
                 }
+                return [
+                    'type' => 'number-input',
+                    'data' => $filterFormInfos,
+                ];
             case 'varchar':
             case 'text':
                 return [
                     'type' => 'text-input',
-                    'data' => $filterFormInfos,
+                    'data' => $this->getFilterFormInfosWithValue(),
                 ];
             case 'date':
                 return [
                     'type' => 'date-input',
-                    'data' => $filterFormInfos,
+                    'data' => $this->getFilterFormInfosWithFromToValue(),
                 ];
             case 'timestamp':
                 return [
                     'type' => 'datetime-input',
-                    'data' => $filterFormInfos,
+                    'data' => $this->getFilterFormInfosWithFromToValue(),
                 ];
             default:
                 throw new \Exception("Invalid database column type");
         }
+    }
+
+    public function getFilterFormInfosWithValue(string $translationPrefix = '') {
+        $filterFormInfos = parent::getFilterFormInfos($translationPrefix);
+        $filterFormInfos = $this->setFilterFormInfoValue($filterFormInfos, 'value');
+        return $filterFormInfos;
+    }
+
+    public function getFilterFormInfosWithFromToValue(string $translationPrefix = '') {
+        $filterFormInfos = parent::getFilterFormInfos($translationPrefix);
+        $filterFormInfos['from_label'] = __('from');
+        $filterFormInfos['to_label'] = __('to');
+        $filterFormInfos = $this->setFilterFormInfoValue($filterFormInfos, 'from_value');
+        $filterFormInfos = $this->setFilterFormInfoValue($filterFormInfos, 'to_value');
+        return $filterFormInfos;
+    }
+
+    public function addFilterToQuery($tableName, $query, $filters) {
+        if (array_key_exists($this->name, $filters)) {
+            $filter = $filters[$this->name];
+            switch ($this->getDataType()) {
+                case 'bit':
+                    if (array_key_exists('value', $filter)) {
+                        if ($filter['value'] == 'on') {
+                            $query->where($tableName . '.' . $this->name, 'TRUE');
+                        }
+                        else if ($filter['value'] == 'off') {
+                            $query->where($tableName . '.' . $this->name, 'FALSE');
+                        }
+                        else {
+                            throw new \Exception('Invalid checkbox value for column ' . $this->name);
+                        }
+                    }
+                    break;
+                case 'int':
+                case 'bigint':
+                case 'decimal':
+                case 'tinyint':
+                case 'date':
+                case 'timestamp':
+                    if (array_key_exists('from_value', $filter)) {
+                        $query->where($tableName . '.' . $filter['name'], '>=', $filter['from_value']);
+                    }
+                    if (array_key_exists('to_value', $filter)) {
+                        $query->where($tableName . '.' . $filter['name'], '<=', $filter['to_value']);
+                    }
+                    break;
+                case 'varchar':
+                case 'text':
+                    if (array_key_exists('value', $filter)) {
+                        $query->where($tableName . '.' . $filter['name'], 'LIKE', '%' . $filter['value'] . '%');
+                    }
+                    break;
+                default:
+                    throw new \Exception("Invalid database column type " . $this->getDataType());
+            }
+        }
+    }
+
+    public function getColumnNameWithTableName($tableName) {
+        return $tableName . '.' . $this->name;
     }
 }

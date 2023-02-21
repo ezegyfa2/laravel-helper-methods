@@ -63,6 +63,7 @@ trait CrmControllerRouteFunctions
 
     public function getTableData(string $tableName)
     {
+        $tableInfos = DatabaseInfos::getSpecificTableInfos($tableName, 'index');
         $selectedRowToShowCount = intval(request()->get('row-count', 10));
         $selectedPageNumber = intval(request()->get('page-number', 1));
         return (object)[
@@ -70,6 +71,8 @@ trait CrmControllerRouteFunctions
             'row_to_show_counts' => [ 10, 25, 50 ],
             'selected_row_to_show_count' => $selectedRowToShowCount,
             'selected_page_number' => $selectedPageNumber,
+            'filter_form_item_type_prefix' => 'bootstrap-filter',
+            'filter_sections' => $tableInfos->getFilterFormInfos()
         ];
     }
 
@@ -79,7 +82,7 @@ trait CrmControllerRouteFunctions
         $formItems = DatabaseInfos::getSpecificTableInfos($tableName, 'create')->getFormInfos('admin.' . $tableName);
         $templateParams->form_data = (object) [
             'title' => 'Create new ' . str_replace('_', ' ', Str::singular($tableName)),
-            'url' => str_replace('/create', '', \Request::url()),
+            'url' => route($tableName . '.store'),
             'button_title' => 'Create',
             'form_item_sections' => $formItems,
         ];
@@ -93,30 +96,11 @@ trait CrmControllerRouteFunctions
 
     public function getData(string $tableName)
     {
-        $rowToShowCount = intval(request()->get('row-count', 10));
-        $tableInfos = DatabaseInfos::getSpecificTableInfos($tableName, 'index');
-        $columnNames = $tableInfos->getColumnNamesWithTableName();
-        array_push($columnNames, 'id');
-        $selectedPageNumber = intval(request()->get('page-number', 1));
-        $totalRowCount = \DB::table($tableName)->count();
-        $rows = \DB::table($tableName)
-            ->select($columnNames)
-            ->limit($rowToShowCount)
-            ->offset(($selectedPageNumber - 1) * $rowToShowCount)
-            ->get()->toArray();
-        foreach ($tableInfos->relationInfos as $relationInfo) {
-            $renderValues = $relationInfo->getRenderValues($selectedPageNumber, $rowToShowCount);
-            for ($i = 0; $i < count($rows); ++$i) {
-                $columnName = $relationInfo->referenceColumnName;
-                $rows[$i]->$columnName = $renderValues[$i];
-            }
-        }
-        return response()->json((object) [
-            'total_row_count' => $totalRowCount,
-            'column_names' => $columnNames,
-            'rows' => $rows,
-            'filter_sections' => $tableInfos->getFilterFormInfos()
-        ]);
+        return DatabaseInfos::getSpecificTableInfos($tableName, 'index')->getDataResponse(
+            intval(request()->get('row-count', 10)),
+            intval(request()->get('page-number', 1)),
+            request()->get('filter-data', [])
+        );
     }
 
     public function getEditView($id, string $tableName)
@@ -124,7 +108,7 @@ trait CrmControllerRouteFunctions
         $templateParams = $this->getLayoutTemplateParams($tableName);
         $templateParams->form_data = (object) [
             'title' => 'Edit ' . str_replace('_', ' ', Str::singular($tableName)),
-            'url' => str_replace('/edit', '', \Request::url()),
+            'url' => route($tableName . '.update', [ 'id' => $id ]),
             'button_title' => 'Edit',
             'form_item_sections' => DatabaseInfos::getSpecificTableInfos($tableName, 'edit')->getFormInfos('admin.' . $tableName, $id),
         ];
@@ -196,20 +180,5 @@ trait CrmControllerRouteFunctions
     public function getCompiledTemplatePath(string $tableName, string $templateName)
     {
         return $this->templateFolderPath . '/' . $templateName . '_compiled.json';
-    }
-
-    public function getSidebarSections()
-    {
-        return array_map(function($tableName) {
-            return (object)[
-                'type' => 'blue-admin-icon-dropdown-item',
-                'data' => (object)[
-                    'url' => '',
-                    'icon_class' => 'fas fa-file-alt text-white',
-                    'sub_content' => 'December 12 2019',
-                    'content' => 'A new monthly report is ready to download!'
-                ]
-            ];
-        }, array_values(DatabaseInfos::getTableNames()));
     }
 }
