@@ -43,18 +43,6 @@ class TableInfos {
         }
     }
 
-    public function getRelationReplacedColumnInfos() {
-        return array_map(function ($columnInfos) {
-            $columnRelation = $this->getColumnRelation($columnInfos);
-            if ($columnRelation) {
-                return $columnRelation;
-            }
-            else {
-                return $columnInfos;
-            }
-        }, $this->columnInfos);
-    }
-
     public function getColumnRelation($columnInfos) {
         foreach ($this->relationInfos as $relationInfo) {
             if ($relationInfo->referenceColumnName == $columnInfos->name) {
@@ -115,26 +103,30 @@ class TableInfos {
     }
 
     public function getDataResponse(int $rowToShowCount, int $selectedPageNumber, array $filters) {
-        $columnNames = $this->getColumnNamesWithTableName();
+        $columnNames = $this->getColumnNamesWithRelatedTableName();
         $rows = $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
         \Log::debug($rowToShowCount);
         \Log::debug($filters);
         \Log::debug($this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->toSql());
         \Log::debug($this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray());
         $totalRowCount = $this->getFilterDataQuery($filters)->count();
-        foreach ($this->relationInfos as $relationInfo) {
-            $renderValues = $relationInfo->getRenderValues($selectedPageNumber, $rowToShowCount);
-            for ($i = 0; $i < count($rows); ++$i) {
-                $columnName = $relationInfo->referenceColumnName;
-                $rows[$i]->$columnName = $renderValues[$i];
-            }
-        }
         return response()->json((object) [
             'total_row_count' => $totalRowCount,
             'column_names' => $columnNames,
             'rows' => $rows,
             'filter_sections' => $this->getFilterFormInfos()
         ]);
+    }
+
+    public function getColumnNamesWithRelatedTableName() {
+        return array_values(array_map(function($columnInfo) {
+            if ($columnInfo instanceof RelationColumnInfos) {
+                return $columnInfo->getRenderSelect();
+            }
+            else {
+                return $this->name . '.' . $columnInfo->name;
+            }
+        }, $this->getRelationReplacedColumnInfos()));
     }
 
     public function getColumnNamesWithTableName() {
@@ -145,7 +137,9 @@ class TableInfos {
 
     public function getDataQuery(int $selectedPageNumber, int $rowToShowCount, array $columnNames, array $filters) {
         return $this->getFilterDataQuery($filters)
-            ->select($columnNames)
+            ->select(array_map(function($columnName) {
+                return \DB::raw($columnName);
+            }, $columnNames))
             ->limit($rowToShowCount)
             ->offset(($selectedPageNumber - 1) * $rowToShowCount);
     }
@@ -172,5 +166,17 @@ class TableInfos {
             }
         }, array_values($this->columnInfos));
         return $filterFormInfos;
+    }
+
+    public function getRelationReplacedColumnInfos() {
+        return array_map(function ($columnInfos) {
+            $columnRelation = $this->getColumnRelation($columnInfos);
+            if ($columnRelation) {
+                return $columnRelation;
+            }
+            else {
+                return $columnInfos;
+            }
+        }, $this->columnInfos);
     }
 }

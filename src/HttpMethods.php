@@ -5,7 +5,6 @@ namespace Ezegyfa\LaravelHelperMethods;
 use Ezegyfa\LaravelHelperMethods\Database\FormGenerating\DatabaseInfos;
 use Exception;
 use Ezegyfa\LaravelHelperMethods\Database\FormGenerating\SimpleColumnInfos;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 

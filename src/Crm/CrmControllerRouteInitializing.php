@@ -64,7 +64,7 @@ trait CrmControllerRouteInitializing
                 };*/
             }
             Route::group([
-                'prefix' => 'admin/' . $tableName
+                'prefix' => 'admin/' . str_replace('_', '-', $tableName)
             ], function () use($tableName, $indexFunction, $filterFunction, $createFunction, $storeFunction, $editFunction, $updateFunction, $destroyFunction, $getDataFunction) {
                 Route::get('/', $indexFunction)
                     ->name($tableName . '.index');

@@ -2,11 +2,14 @@
 
 namespace Ezegyfa\LaravelHelperMethods;
 
-class HttpMethods
+use Illuminate\Support\Facades\Route;
+
+class DesignerMethods
 {
     public static function registerDesignerRoute() {
         Route::post('/designer', function() {
-            $templateName = request()->input('template_name');
+            $templateName = request()->get('template-name');
+            \Log::debug($templateName);
             file_put_contents(
                 static::getTemplatePath($templateName), 
                 request()->input()['designedTemplate'], 
@@ -26,7 +29,7 @@ class HttpMethods
                 'data' => (object) [],
             ];
             if ($templateName) {
-                $template->data->template = json_decode(static::getTemplatePath($templateName));
+                $template->data->template = json_decode(file_get_contents(static::getTemplatePath($templateName)));
             }
             return view('layouts.dynamicPage', compact('template'));
         });
@@ -85,16 +88,16 @@ class HttpMethods
         });
         Route::post('/designer/create-template', function() {
             try {
-                $templateContent = request()->input()['template'];
+                $templateContent = 'export default ' . request()->input()['template'];
                 $templateName = request()->input()['templateName'];
                 $componentFolderPath = FolderMethods::combinePaths(
-                    config('app.node_modules_folder_path'), 
-                    'Vue',
+                    config('app.project_node_module_folder_path'), 
                     'src',
                     'Templates'
                 );
-                
-    
+                mkdir($componentFolderPath);
+                file_put_contents(FolderMethods::combinePaths($componentFolderPath, $templateName . '.js'), $templateContent);
+
                 return response()->json([
                     'message' => 'Success',
                 ]);
@@ -108,6 +111,6 @@ class HttpMethods
     }
 
     public static function getTemplatePath(string $templateName) {
-        return base_path('app/templates/' . $templateName . '.json');
+        return base_path('app/Templates/' . $templateName . '.json');
     }
 }

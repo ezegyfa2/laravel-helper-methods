@@ -36,8 +36,12 @@ class RelationColumnInfos extends ColumnInfos {
     public function getFilterFormInfos(string $translationPrefix = '') {
         $formInfoData = parent::getFormInfos($translationPrefix);
         $formInfoData['options'] = $this->getOptions();
+        array_push($formInfoData['options'], (object) [
+            'text' => 'No filter',
+            'value' => 'no_filter',
+        ]);
         $formInfoData = $this->setFilterFormInfoValue($formInfoData, 'value');
-        return (object)[
+        return (object) [
             'type' => 'select',
             'data' => $formInfoData
         ];
@@ -74,6 +78,10 @@ class RelationColumnInfos extends ColumnInfos {
         return array_map(function($row) {
             return $this->getRowLabel($row, $this->getRenderColumnNames());
         }, $rows);
+    }
+
+    public function getRenderSelect() {
+        return 'CONCAT(' . StringMethods::concatenateStrings($this->getRenderColumnNamesWithTableName(), ', " - ", ') . ')';
     }
 
     public function getRenderColumnNamesWithTableName() {
@@ -139,7 +147,10 @@ class RelationColumnInfos extends ColumnInfos {
 
     public function addFilterToQuery($tableName, $query, $filters) {
         if (array_key_exists($this->name, $filters) && array_key_exists('value', $filters[$this->name])) {
-            $query->where($tableName . '.' . $filters[$this->name]['name'], $filters[$this->name]['value']);
+            $filter = $filters[$this->name]['value'];
+            if ($filter != 'no_filter') {
+                $query->where($tableName . '.' . $filters[$this->name]['name'], $filters[$this->name]['value']);
+            }
         }
     }
 
@@ -148,7 +159,7 @@ class RelationColumnInfos extends ColumnInfos {
     }
 
     public function getColumnNameWithTableName($tableName) {
-        $renderColumnNames = array_map(function($columnName) {
+        $renderColumnNames = array_map(function($columnName) use($tableName) {
             return $tableName . '.' . $columnName;
         }, $this->getRenderColumnNames());
         return 'CONCAT(' . StringMethods::concatenateStrings($renderColumnNames, ", ' - '") . ') AS ' . $this->referenceColumnName;

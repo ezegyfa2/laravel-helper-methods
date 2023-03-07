@@ -10,8 +10,8 @@ class BlueAdminController
 {
     use CrmControllerFunctions;
     
-    public $indexTemplateName = 'blue-admin-index-template';
-    public $editTemplateName = 'blue-admin-edit-template';
+    public $indexTemplateName = 'blue_admin_index';
+    public $editTemplateName = 'blue_admin_edit';
     public $templateFolderPath = __DIR__ . '/../Templates';
 
     public function getSidebarSections() {

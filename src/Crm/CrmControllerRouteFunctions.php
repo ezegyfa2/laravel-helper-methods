@@ -55,7 +55,6 @@ trait CrmControllerRouteFunctions
 
     public function getIndexView(string $tableName)
     {
-        $this->getData($tableName);
         $templateParams = $this->getLayoutTemplateParams($tableName);
         $templateParams->table_data = $this->getTableData($tableName);
         return DynamicTemplateMethods::getTemplateDynamicPage($this->indexTemplateName, $templateParams);

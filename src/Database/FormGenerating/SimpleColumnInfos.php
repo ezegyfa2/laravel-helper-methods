@@ -64,6 +64,8 @@ class SimpleColumnInfos extends ColumnInfos {
                         ], $translationPrefix)),
                     ];
                 case 'text':
+                case 'mediumtext':
+                case 'largetext':
                     return [
                         'type' => 'textarea',
                         'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([], $translationPrefix)),
@@ -79,7 +81,7 @@ class SimpleColumnInfos extends ColumnInfos {
                         'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([], $translationPrefix)),
                     ];
                 default:
-                    throw new \Exception("Invalid database column type");
+                    $this->invalidColumnType();
             }
         }
     }
@@ -164,13 +166,15 @@ class SimpleColumnInfos extends ColumnInfos {
                     'max:' . $this->getLength(),
                 ]);
             case 'text':
+            case 'mediumtext':
+            case 'largetext':
                 return $validator;
             case 'date':
                 return array_merge($validator, ['date']);
             case 'timestamp':
                 return array_merge($validator, ['date_format:Y-m-d H:i']);
             default:
-                throw new \Exception("Invalid database column type");
+                $this->invalidColumnType();
         }
     }
 
@@ -198,6 +202,8 @@ class SimpleColumnInfos extends ColumnInfos {
                 ];
             case 'varchar':
             case 'text':
+            case 'mediumtext':
+            case 'largetext':
                 return [
                     'type' => 'text-input',
                     'data' => $this->getFilterFormInfosWithValue(),
@@ -213,7 +219,7 @@ class SimpleColumnInfos extends ColumnInfos {
                     'data' => $this->getFilterFormInfosWithFromToValue(),
                 ];
             default:
-                throw new \Exception("Invalid database column type");
+                $this->invalidColumnType();
         }
     }
 
@@ -264,17 +270,27 @@ class SimpleColumnInfos extends ColumnInfos {
                     break;
                 case 'varchar':
                 case 'text':
+                case 'mediumtext':
+                case 'largetext':
                     if (array_key_exists('value', $filter)) {
                         $query->where($tableName . '.' . $filter['name'], 'LIKE', '%' . $filter['value'] . '%');
                     }
                     break;
                 default:
-                    throw new \Exception("Invalid database column type " . $this->getDataType());
+                    $this->invalidColumnType();
             }
         }
     }
 
+    public function addOrderByToQuery($tableName, $query, $order = 'ASC') {
+        $query->orderBy();
+    }
+
     public function getColumnNameWithTableName($tableName) {
         return $tableName . '.' . $this->name;
+    }
+
+    protected function invalidColumnType() {
+        throw new \Exception("Invalid database column type " . $this->getDataType());
     }
 }

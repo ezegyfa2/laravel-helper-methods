@@ -9,10 +9,12 @@ class DynamicTemplateMethods
         return view('layouts.dynamicPage', compact('template'));
     }
 
+    // Must use templates becouse components doesn't compile templates
     public static function getViewTemplate($templateTypeName, $templateParams = []) {
         return (object)[
-            'type' => $templateTypeName,
+            'type' => 'dynamic-template',
             'data' => (object)[
+                'template_type_name' => $templateTypeName,
                 'params' => $templateParams
             ]
         ];
@@ -42,8 +44,8 @@ class DynamicTemplateMethods
             }
             return $template;
         }
-        else if (gettype($template) == 'string' && strpos($template, '-++') === 0) {
-            $paramName = substr($template, 3);
+        else if (gettype($template) == 'string' && strpos($template, '--') === 0) {
+            $paramName = substr($template, 2);
             static::collectTemplateParamTranslation($paramName, $paramTranslations, $paramPrefix);
         }
     }
