@@ -40,8 +40,7 @@ class CreateListToTranslate extends Command
     public function handle()
     {
         $folderPath = 'D:\Projektek\Sajat\Forditas';
-        $fileNames = FolderMethods::getFolderFiles($folderPath);
-        $filePathToTranslate = $folderPath . '/' . $fileNames[1];
+        $filePathToTranslate = FolderMethods::combinePaths($folderPath, "texts.php");
         $textsToTranslate = $this->getTextsToTranslate($filePathToTranslate);
         $translateValuesFileName = pathinfo($filePathToTranslate)['filename'] . '_values.json';
         file_put_contents($folderPath . '/' . $translateValuesFileName, json_encode($textsToTranslate, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));

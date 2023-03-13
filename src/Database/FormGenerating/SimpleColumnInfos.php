@@ -15,8 +15,8 @@ class SimpleColumnInfos extends ColumnInfos {
         parent::__construct($name, $type, $isNull, $default, $validationErrors);
     }
 
-    public function getFormInfos(string $labelPrefix = '', $withOldValues = null, $value = null) {
-        $formInfos = $this->getSpecificFormInfos($labelPrefix, $withOldValues, $value);
+    public function getFormInfos(string $translationPrefix = '', $withOldValues = null, $value = null) {
+        $formInfos = $this->getSpecificFormInfos($translationPrefix, $withOldValues, $value);
         if ($this->name == 'phone' || $this->name == 'telephone') {
             $formInfos['type'] = 'phone-input';
         }

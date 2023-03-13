@@ -4,9 +4,9 @@ namespace Ezegyfa\LaravelHelperMethods;
 
 class DynamicTemplateMethods
 {
-    public static function getTemplateDynamicPage($templateTypeName, $templateParams = []) {
+    public static function getTemplateDynamicPage($templateTypeName, $templateParams = [], $scriptName) {
         $template = static::getViewTemplate($templateTypeName, $templateParams);
-        return view('layouts.dynamicPage', compact('template'));
+        return view('layouts.dynamicPage', compact('template', 'scriptName'));
     }
 
     // Must use templates becouse components doesn't compile templates

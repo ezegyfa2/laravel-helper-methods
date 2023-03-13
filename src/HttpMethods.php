@@ -21,8 +21,13 @@ class HttpMethods
             $tableInfos = DatabaseInfos::getTableInfos()[$tableName];
             $request->merge(static::getCorrectedRequestData($request->all(), $tableInfos));
             $request->validate($tableInfos->getValidators());
-            \DB::table($tableName)->insert($tableInfos->filterData(request()->all()));
-            return redirect($successRoute)->with('success_message', $successMessage);
+            static::store($request, $tableName);
+            if (\Cookie::get('consent') == null) {
+                return redirect($successRoute . '?success_message=' . $successMessage);
+            }
+            else {
+                return redirect($successRoute)->with('success_message', $successMessage);
+            }
         }
         catch (ValidationException $e) {
             $errorMessages = static::updateErrors($e->errors(), $e->validator->failed());
@@ -33,6 +38,29 @@ class HttpMethods
                 return redirect()->back()->withInput(request()->all())->withErrors($errorMessages);
             }
         }
+    }
+
+    public static function getApiStoreRequest(Request $request, String $tableName, $successMessage) {
+        try {
+            $tableInfos = DatabaseInfos::getTableInfos()[$tableName];
+            $request->merge(static::getCorrectedRequestData($request->all(), $tableInfos));
+            $request->validate($tableInfos->getValidators());
+            $success = static::store($request, $tableName);
+            return response()->json([
+                'success' => $success,
+                'id' => \DB::getPdo()->lastInsertId()
+            ]);
+        }
+        catch (ValidationException $e) {
+            $errorMessages = static::updateErrors($e->errors(), $e->validator->failed());
+            return response()->json($errorMessages);
+        }
+    }
+
+    public static function store(Request $request, string $tableName) {
+        $tableInfos = DatabaseInfos::getTableInfos()[$tableName];
+        $request->merge(static::getCorrectedRequestData($request->all(), $tableInfos));
+        return \DB::table($tableName)->insert($tableInfos->filterData(request()->all()));
     }
 
     public static function getUpdateRequest(Request $request, int $id, String $tableName, $successMessage, $successRoute, $errorRoute = null) {
@@ -47,13 +75,23 @@ class HttpMethods
             return redirect($successRoute)->with('success_message', $successMessage);
         }
         catch (ValidationException $e) {
-            $errorMessages = static::updateErrors($e->errors(), $e->validator->failed());
-            if ($errorRoute) {
-                return redirect()->to($errorRoute)->withInput($request->all())->withErrors($errorMessages);
-            }
-            else {
-                return redirect()->back()->withInput($request->all())->withErrors($errorMessages);
-            }
+            return static::getValidationError($e, $request, $errorRoute);
+        }
+    }
+
+    public static function validateTableData($request, string $tableName) {
+        $tableInfos = DatabaseInfos::getTableInfos()[$tableName];
+        $request->merge(static::getCorrectedRequestData($request->all(), $tableInfos));
+        $request->validate($tableInfos->getValidators());
+    }
+
+    public static function getValidationError(ValidationException $e, Request $request, string $errorRoute = null) {
+        $errorMessages = static::updateErrors($e->errors(), $e->validator->failed());
+        if ($errorRoute) {
+            return redirect()->to($errorRoute)->withInput($request->all())->withErrors($errorMessages);
+        }
+        else {
+            return redirect()->back()->withInput($request->all())->withErrors($errorMessages);
         }
     }
 

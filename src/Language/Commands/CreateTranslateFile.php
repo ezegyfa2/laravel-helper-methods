@@ -39,13 +39,10 @@ class CreateTranslateFile extends Command
      *
      * @return int
      */
-    public function handle()
-    {
-        $folderPath = 'D:\Projektek\Sajat\Forditas';
-        $fileNames = FolderMethods::getFolderFiles($folderPath);
-        $filePathToTranslate = $folderPath . '/' . $fileNames[1];
+    public function handle() {
+        $folderPath = config('app.translation_folder_path');
+        $filePathToTranslate = FolderMethods::combinePaths($folderPath, "texts.php");
         $translateObject = require($filePathToTranslate);
-
         $this->replacedValueCount = 0;
         $translatedObject = $this->replaceTextsToTranslate($translateObject, $this->getTranslateValues($filePathToTranslate, $folderPath));
 
@@ -55,7 +52,7 @@ class CreateTranslateFile extends Command
 
     public function getTranslateValues($filePathToTranslate, $folderPath) {
         $translateValuesFileName = pathinfo($filePathToTranslate)['filename'] . '_translated_values.json';
-        return json_decode(file_get_contents($folderPath . '/' . $translateValuesFileName));
+        return json_decode(file_get_contents(FolderMethods::combinePaths($folderPath, $translateValuesFileName)));
     }
 
     public function replaceTextsToTranslate($object, $translatedTexts) {
