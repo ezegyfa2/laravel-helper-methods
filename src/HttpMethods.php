@@ -22,12 +22,13 @@ class HttpMethods
             $request->merge(static::getCorrectedRequestData($request->all(), $tableInfos));
             $request->validate($tableInfos->getValidators());
             static::store($request, $tableName);
-            if (\Cookie::get('consent') == null) {
+            return redirect($successRoute)->with('success_message', $successMessage);
+            /*if (\Cookie::get('consent') == null) {
                 return redirect($successRoute . '?success_message=' . $successMessage);
             }
             else {
                 return redirect($successRoute)->with('success_message', $successMessage);
-            }
+            }*/
         }
         catch (ValidationException $e) {
             $errorMessages = static::updateErrors($e->errors(), $e->validator->failed());
