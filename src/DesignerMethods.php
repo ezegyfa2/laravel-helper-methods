@@ -33,6 +33,10 @@ class DesignerMethods
             }
             return view('layouts.dynamicPage', compact('template'));
         });
+        Route::get('/template', function() {
+            $templateName = request()->get('template-name');
+            return DynamicTemplateMethods::getTemplateDynamicPage($templateName, [], 'app');
+        });
         Route::get('/designer-result', function () {
             $templatePath = static::getTemplatePath(request()->get('template-name'));
             $template = file_get_contents($templatePath);

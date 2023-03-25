@@ -11,9 +11,9 @@ class DynamicTemplateMethods
 
     // Must use templates becouse components doesn't compile templates
     public static function getViewTemplate($templateTypeName, $templateParams = []) {
-        return (object)[
+        return (object) [
             'type' => 'dynamic-template',
-            'data' => (object)[
+            'data' => (object) [
                 'template_type_name' => $templateTypeName,
                 'params' => $templateParams
             ]
