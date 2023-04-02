@@ -114,6 +114,15 @@ class DesignerMethods
         });
     }
 
+    public static function registerServerCommandRoutes() {
+        Route::get('/git-pull', function () {
+            $password = request()->get('password');
+            return response()->json([
+                'message' => file_get_contents('http://127.0.0.1:8222/dynamic_web/command.php?command=git_pull'),
+            ]);
+        });
+    }
+
     public static function getTemplatePath(string $templateName) {
         return base_path('app/Templates/' . $templateName . '.json');
     }
