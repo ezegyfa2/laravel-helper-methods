@@ -4,7 +4,7 @@ namespace Ezegyfa\LaravelHelperMethods;
 
 class DynamicTemplateMethods
 {
-    public static function getTemplateDynamicPage($templateTypeName, $templateParams = [], $scriptName) {
+    public static function getTemplateDynamicPage($templateTypeName, $templateParams = [], $scriptName = 'app') {
         $template = static::getViewTemplate($templateTypeName, $templateParams);
         return view('layouts.dynamicPage', compact('template', 'scriptName'));
     }
