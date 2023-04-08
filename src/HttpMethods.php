@@ -190,4 +190,8 @@ class HttpMethods
         }
         return $correspondingUniqueRule;
     }
+    
+    public static function getCurrentUrlPath() {
+        return parse_url(\URL::full(), PHP_URL_PATH);
+    }
 }

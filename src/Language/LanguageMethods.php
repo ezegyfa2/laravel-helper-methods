@@ -3,9 +3,11 @@
 namespace Ezegyfa\LaravelHelperMethods\Language;
 
 use Ezegyfa\LaravelHelperMethods\FolderMethods;
+use Ezegyfa\LaravelHelperMethods\HttpMethods;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\App;
 
 class LanguageMethods
 {
@@ -17,6 +19,26 @@ class LanguageMethods
         return $urls;
     }
 
+    public static function getTranslationUrlObjects() {
+        $urlPath = HttpMethods::getCurrentUrlPath();
+        if (strpos($urlPath, '/') === 0) {
+            $urlPath = substr($urlPath, 1);
+        }
+        $urlPathTranslationKey = static::getTranslationKey($urlPath);
+        if ($urlPathTranslationKey) {
+            return array_map(function($language) use($urlPath, $urlPathTranslationKey) {
+                App::setLocale($language);
+                return (object) [
+                    'name' => strtoupper($language),
+                    'url' => str_replace($urlPath, __('routes.' . $urlPathTranslationKey), \URL::full()),
+                ];
+            }, static::getTranslatedLanguages());
+        }
+        else {
+            return static::getLanguageUrlObjects();
+        }
+    }
+
     public static function getLanguageUrlObjects() {
         $url = static::getCurrentUrlWithoutLanguageSegment();
         return array_map(function($language) use($url) {
@@ -25,10 +47,6 @@ class LanguageMethods
                 'url' => static::getUrlWithLanguage($url, $language)
             ];
         }, static::getTranslatedLanguages());
-    }
-
-    public static function getTranslatedLanguages() {
-        return FolderMethods::getFolderSubFolders(resource_path('lang'));
     }
 
     // Doesn't get language from url
@@ -69,9 +87,52 @@ class LanguageMethods
         return end($segments);
     }
 
+    public static function createTranslatedGetRoutes(string $url, $controllerAction) {
+        $urlToTranslate = str_replace('/', '.', $url);
+        Route::get($url, $controllerAction);
+        $currentLanguage = App::currentLocale();
+        foreach(static::getTranslatedLanguages() as $language) {
+            App::setLocale($language);
+            Route::get('/' . __('routes' . $urlToTranslate), $controllerAction);
+        }
+        App::setLocale($currentLanguage);
+    }
+
     public static function createGetRouteWithLanguage(string $url, $controllerAction) {
         Route::get($url, $controllerAction);
         Route::get($url . '/{language}', $controllerAction)
             ->where(['language' => '[a-zA-Z]{2}']);
+    }
+
+    public static function getTranslations(string $translationFileName) {
+        $translations = [];
+        foreach (static::getTranslatedLanguages() as $language) {
+            App::setLocale($language);
+            $translations[$language] = \Lang::get($translationFileName);
+        }
+        return $translations;
+    }
+
+    public static function getTranslationKey(?string $translation) {
+        if ($translation === null) {
+            return null;
+        }
+        else {
+            if (strpos('/', $translation) === 0) {
+                $translation = substr($translation, 1);
+            }
+            $routeTranslations = static::getTranslations('routes');
+            foreach(static::getTranslatedLanguages() as $language) {
+                $translationKey = array_search($translation, $routeTranslations[$language]);
+                if ($translationKey) {
+                    return $translationKey;
+                }
+            }
+            return null;
+        }
+    }
+
+    public static function getTranslatedLanguages() {
+        return FolderMethods::getFolderSubFolders(resource_path('lang'));
     }
 }
