@@ -128,9 +128,9 @@ class DatabaseInfos {
     public static function getTableInfos(array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
         $tableInfos = static::getTableInfosWithoutRelations($ignoredColumnNames);
         $query = 'SELECT for_name, ref_name, for_col_name, ref_col_name '
-            . 'FROM INFORMATION_SCHEMA.INNODB_SYS_FOREIGN '
-            . 'INNER JOIN INFORMATION_SCHEMA.INNODB_SYS_FOREIGN_COLS '
-            . 'ON INNODB_SYS_FOREIGN.ID = INNODB_SYS_FOREIGN_COLS.ID';
+            . 'FROM INFORMATION_SCHEMA.INNODB_FOREIGN '
+            . 'INNER JOIN INFORMATION_SCHEMA.INNODB_FOREIGN_COLS '
+            . 'ON INNODB_FOREIGN.ID = INNODB_FOREIGN_COLS.ID';
         $rawRelationInfos = HelperTableMethods::select($query);
         $rawRelationInfos = array_filter($rawRelationInfos, function($rawRelationInfo) {
             $referenceTableNameParts = explode('/', $rawRelationInfo->ref_name);
@@ -180,7 +180,8 @@ class DatabaseInfos {
     public static function getTableInfosWithoutRelations(array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
         $query = 'SELECT table_name, column_name, column_type, is_nullable, column_default, character_maximum_length, numeric_precision '
             . 'FROM INFORMATION_SCHEMA.COLUMNS '
-            . 'WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '"';
+            . 'WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '"'
+            . 'ORDER BY ordinal_position';
         $rawTableInfos = HelperTableMethods::select($query);
         $uniques = static::getUniques();
         $tableInfos = [];
