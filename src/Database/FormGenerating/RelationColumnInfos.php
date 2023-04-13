@@ -3,6 +3,7 @@
 namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
 use Ezegyfa\LaravelHelperMethods\StringMethods;
+use Ezegyfa\LaravelHelperMethods\Database\HelperTableMethods;
 
 class RelationColumnInfos extends ColumnInfos {
     public $referencedTableInfos;
@@ -25,53 +26,84 @@ class RelationColumnInfos extends ColumnInfos {
     }
 
     public function getFormInfos(string $labelPrefix = '', $withOldValues = null, $value = null) {
-        return (object)[
-            'type' => 'select',
-            'data' => (object)array_merge(parent::getFormInfos($labelPrefix, $withOldValues, $value), [
-                'options' => $this->getOptions(),
-            ])
-        ];
-    }
-
-    public function getFilterFormInfos(string $translationPrefix = '') {
-        $formInfoData = parent::getFormInfos($translationPrefix);
-        $formInfoData['options'] = $this->getOptions();
-        array_push($formInfoData['options'], (object) [
-            'text' => 'No filter',
-            'value' => 'no_filter',
-        ]);
-        $formInfoData = $this->setFilterFormInfoValue($formInfoData, 'value');
+        $formInfoData = parent::getFormInfos($labelPrefix, $withOldValues, $value);
+        $formInfoData = $this->setOptions($formInfoData);
         return (object) [
             'type' => 'select',
             'data' => $formInfoData
         ];
     }
 
-    public function getOptions() {
+    public function getFilterFormInfos(string $translationPrefix = '') {
+        $formInfoData = parent::getFilterFormInfos($translationPrefix);
+        $formInfoData = $this->setFilterFormInfoValue($formInfoData, 'value');
+        $formInfoData = $this->setOptions($formInfoData);
+        if (isset($formInfoData->options)) {
+            array_push($formInfoData->options, (object) [
+                'text' => 'No filter',
+                'value' => 'no_filter',
+            ]);
+        }
+        return (object) [
+            'type' => 'select',
+            'data' => $formInfoData
+        ];
+    }
+
+    public function setOptions($formInfoData) {
+        if (\DB::table($this->getReferenceTableName())->count() > 20) {
+            $formInfoData->data_url = '/admin/' . $this->tableInfos->name .'/get-select-options';
+            $formInfoData->data_infos = [
+                'column-name' => $this->referenceColumnName,
+                '_token' => csrf_token()
+            ];
+        }
+        else {
+            $formInfoData->options = $this->getOptions();
+            array_push($formInfoData->options, (object) [
+                'text' => 'No filter',
+                'value' => 'no_filter',
+            ]);
+        }
+        return $formInfoData;
+    }
+
+    public function getOptions(?string $searchedText = null) {
+        $query = \DB::table($this->getReferenceTableName());
+        if ($searchedText) {
+            $query = $query->where(\DB::raw($this->getRenderSelect()), 'LIKE', \DB::raw('\'%' . $searchedText . '%\''));
+        }
         if ($this->optionCreator) {
-            $rows = \DB::table($this->referencedTableInfos->name)->select()->get();
+            $rows = $query->select()->get();
             return array_map($this->optionCreator, $rows);
         }
         else {
-            $renderColumnNames = $this->getRenderColumnNames();
-            $rows = \DB::table($this->getReferenceTableName())->select(array_merge($renderColumnNames, ['id']))->get()->toArray();
-            return array_map(function($row) use($renderColumnNames) {
-                return (object) [
-                    'text' => $this->getRowLabel($row, $renderColumnNames),
-                    'value' => $row->id,
-                ];
-            }, $rows);
+            $renderColumnNames = $this->getRenderColumnNamesWithTableName($this->getReferenceTableName());
+            array_push($renderColumnNames, $this->getReferenceTableName() . '.id');
+            $query = $query->select($renderColumnNames);
+            if ($query->count() > 20) {
+                return [];
+                /*return [
+                    'message' => __('admin.index.too_many_result')
+                ];*/
+            }
+            else {
+                $rows = $query->select($renderColumnNames)->get()->toArray();
+                return array_map(function($row) use($renderColumnNames) {
+                    return (object) [
+                        'text' => $this->getRowLabel($row, $this->getRenderColumnNames()),
+                        'value' => $row->id,
+                    ];
+                }, $rows);
+            }
         }
     }
 
     public function getRenderValues(int $selectedPageNumber, int $rowToShowCount) {
-        $columnNames = array_map(function($columnName) {
-            return 'table2.' . $columnName;
-        }, $this->getRenderColumnNames());
-        $rows = \DB::table($this->tableInfos->name . ' as table1')
-            ->leftJoin($this->referencedTableInfos->name . ' as table2', 'table1.' . $this->referenceColumnName, 'table2.id')
+        $columnNames = $this->getRenderColumnNamesWithTableName($this->getReferenceTableName());
+        $rows = $this->getJoinedQuery()
             ->select($columnNames)
-            ->orderBy('table1.id')
+            ->orderBy($this->tableInfos->name . '.id')
             ->limit($rowToShowCount)
             ->offset(($selectedPageNumber - 1) * $rowToShowCount)
             ->get()->toArray();
@@ -80,17 +112,22 @@ class RelationColumnInfos extends ColumnInfos {
         }, $rows);
     }
 
-    public function getRenderSelect() {
-        return 'CONCAT(' . StringMethods::concatenateStrings($this->getRenderColumnNamesWithTableName(), ', " - ", ') . ')';
+    public function getJoinedQuery() {
+        return \DB::table($this->tableInfos->name)
+            ->leftJoin($this->getReferenceTableName(), $this->tableInfos->name . '.' . $this->referenceColumnName, $this->getReferenceTableName() . '.id');
     }
 
-    public function getRenderColumnNamesWithTableName() {
-        return array_map(function ($renderColumnName) {
+    public function getRenderSelect() {
+        return 'CONCAT(' . StringMethods::concatenateStrings($this->getRenderColumnNamesWithTableName($this->getReferenceTableName()), ', " - ", ') . ')';
+    }
+
+    public function getRenderColumnNamesWithTableName(string $tableName) {
+        return array_map(function ($renderColumnName) use($tableName) {
             if (str_contains($renderColumnName, '.')) {
                 return $renderColumnName;
             }
             else {
-                return $this->getReferenceTableName() . '.' . $renderColumnName;
+                return $tableName . '.' . $renderColumnName;
             }
         }, $this->getRenderColumnNames());
     }
@@ -132,9 +169,10 @@ class RelationColumnInfos extends ColumnInfos {
 
     public function getRowLabel($row, array $renderColumnNames) {
         $renderValues = array_map(function($renderColumnName) use($row) {
+            //dd($row);
             return $row->$renderColumnName;
         }, $renderColumnNames);
-        return StringMethods::shortString(StringMethods::concatenateStrings($renderValues, ' - '));
+        return StringMethods::concatenateStrings($renderValues, ' - ');
     }
 
     public function getReferenceColumnInfos() {
@@ -155,7 +193,13 @@ class RelationColumnInfos extends ColumnInfos {
     }
 
     public function addJoinToQuery($tableName, $query) {
-        $query->leftJoin($this->getReferenceTableName(), $tableName . '.' . $this->referenceColumnName, $this->getReferenceTableName() . '.id');
+        $query = HelperTableMethods::addJoin(
+            $query,
+            $this->getReferenceTableName(), 
+            $tableName . '.' . $this->referenceColumnName, 
+            $this->getReferenceTableName() . '.id', 
+            'left'
+        );
     }
 
     public function getColumnNameWithTableName($tableName) {

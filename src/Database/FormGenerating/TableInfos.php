@@ -179,4 +179,32 @@ class TableInfos {
             }
         }, $this->columnInfos);
     }
+
+    public function isCheckBox($columnName) {
+        if (array_key_exists($columnName, $this->columnInfos)) {
+            $columnInfo = $this->columnInfos[$columnName];
+            return $columnInfo instanceof SimpleColumnInfos && $columnInfo->isCheckBox();
+        }
+        else {
+            return false;
+        }
+    }
+
+    public function isDatetime($columnName) {
+        if (array_key_exists($columnName, $this->columnInfos)) {
+            $columnInfo = $this->columnInfos[$columnName];
+            return $columnInfo instanceof SimpleColumnInfos && $columnInfo->isDatetime();
+        }
+        else {
+            return false;
+        }
+    }
+
+    public function getNameInUrlFormat() {
+        return str_replace('_', '-', $this->name);
+    }
+
+    public function getNameInNormalFormat() {
+        return str_replace('_', ' ', $this->name);
+    }
 }

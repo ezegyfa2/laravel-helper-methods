@@ -27,6 +27,7 @@ trait CrmControllerRouteInitializing
                 $editFunction = $controllerName . '@edit';
                 $updateFunction = $controllerName . '@update';
                 $getDataFunction = $controllerName . '@getData';
+                $getSelectOptionsFunction = $controllerName . '@getSelectOptions';
                 $destroyFunction = $controllerName . '@destroy';
                 /*$queryFunction = $controllerName . '@query';
                 $showFunction = $controllerName . '@show';*/
@@ -48,10 +49,13 @@ trait CrmControllerRouteInitializing
                     return $this->getEditView($id, $tableName);
                 };
                 $updateFunction = function($id, Request $request) use($tableName) {
-                    return static::processUpdate($id, $request, $tableName);
+                    return $this->processUpdate($id, $request, $tableName);
                 };
                 $getDataFunction = function() use($tableName) {
                     return $this->getData($tableName);
+                };
+                $getSelectOptionsFunction = function() use($tableName) {
+                    return $this->getSelectOptions($tableName);
                 };
                 $destroyFunction = function($id) use($tableName) {
                     return $this->processDestroy($id, $tableName);
@@ -65,7 +69,7 @@ trait CrmControllerRouteInitializing
             }
             Route::group([
                 'prefix' => 'admin/' . str_replace('_', '-', $tableName)
-            ], function () use($tableName, $indexFunction, $filterFunction, $createFunction, $storeFunction, $editFunction, $updateFunction, $destroyFunction, $getDataFunction) {
+            ], function () use($tableName, $indexFunction, $filterFunction, $createFunction, $storeFunction, $editFunction, $updateFunction, $destroyFunction, $getDataFunction, $getSelectOptionsFunction) {
                 Route::get('/', $indexFunction)
                     ->name($tableName . '.index');
                 Route::post('/', $filterFunction)
@@ -82,6 +86,8 @@ trait CrmControllerRouteInitializing
                     ->where('id', '[0-9]+');
                 Route::post('/get-data', $getDataFunction)
                     ->name($tableName . '.get_data');
+                Route::post('/get-select-options', $getSelectOptionsFunction)
+                    ->name($tableName . '.get_select_options');
                 Route::delete('/{id}', $destroyFunction)
                     ->name($tableName . '.destroy')
                     ->where('id', '[0-9]+');

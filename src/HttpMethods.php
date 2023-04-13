@@ -98,26 +98,37 @@ class HttpMethods
 
     public static function getCorrectedRequestData($requestData, $tableInfos) {
         foreach ($tableInfos->getColumnNames() as $columnName) {
-            if (array_key_exists($columnName, $requestData)) {
-                if (static::isCheckBox($columnName, $tableInfos) && !array_key_exists($columnName, $requestData)) {
-                    $requestData[$columnName] = false;
+            if ($tableInfos->isCheckBox($columnName)) {
+                if (array_key_exists($columnName, $requestData)) {
+                    if ($requestData[$columnName] == 'on') {
+                        return 1;
+                    }
+                    else if ($requestData[$columnName] == 'off') {
+                        return 0;
+                    }
+                    else {
+                        throw new \Exception('Invalid checkbox value');
+                    }
                 }
                 else {
-                    $requestData[$columnName] = static::getCorrectedRequestValue($requestData[$columnName]);
+                    $requestData[$columnName] = false;
+                }
+            }
+            else if ($tableInfos->isDatetime($columnName)) {
+                if (array_key_exists($columnName, $requestData)) {
+                    if ($requestData[$columnName] == '') {
+                        $requestData[$columnName] = null;
+                    }
+                    else {
+                        $datePattern = '/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]/i';
+                        if (preg_replace($datePattern, '', $requestData[$columnName]) == '') {
+                            $requestData[$columnName] =  str_replace('T', ' ', $requestData[$columnName]);
+                        }
+                    }
                 }
             }
         }
         return $requestData;
-    }
-
-    public static function isCheckBox($columnName, $tableInfos) {
-        if (array_key_exists($columnName, $tableInfos->columnInfos)) {
-            $columnInfo = $tableInfos->columnInfos[$columnName];
-            return $columnInfo instanceof SimpleColumnInfos && $columnInfo->isCheckBox();
-        }
-        else {
-            return false;
-        }
     }
 
     public static function getCorrectedRequestValue($requestDataValue)

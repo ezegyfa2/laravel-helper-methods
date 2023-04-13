@@ -18,9 +18,8 @@ class SimpleColumnInfos extends ColumnInfos {
     public function getFormInfos(string $translationPrefix = '', $withOldValues = null, $value = null) {
         $formInfos = $this->getSpecificFormInfos($translationPrefix, $withOldValues, $value);
         if ($this->name == 'phone' || $this->name == 'telephone') {
-            $formInfos['type'] = 'phone-input';
+            $formInfos->type = 'phone-input';
         }
-        $formInfos['data'] = (object)$formInfos['data'];
         return (object)$formInfos;
     }
 
@@ -28,19 +27,18 @@ class SimpleColumnInfos extends ColumnInfos {
         $formInfos = parent::getFormInfos($translationPrefix, $withOldValues, $value);
         $dataType = $this->getDataType();
         if (($dataType == 'varchar' || $dataType == 'text') && $this->name == 'email') {
+            $formInfos->maxlength = $this->getLength();
+            $formInfos->minlength = 0;
             return [
                 'type' => 'email-input',
-                'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([
-                    'maxlength' => $this->getLength(),
-                    'minlength' => 0,
-                ], $translationPrefix)),
+                'data' => $this->setFormInfosWithPlaceholder($formInfos, $translationPrefix),
             ];
         }
         else {
             switch ($this->getDataType()) {
                 case 'bit':
                     unset($formInfos['required']);
-                    return [
+                    return (object) [
                         'type' => 'checkbox-input',
                         'data' => $formInfos,
                     ];
@@ -48,37 +46,35 @@ class SimpleColumnInfos extends ColumnInfos {
                 case 'bigint':
                 case 'decimal':
                 case 'tinyint':
-                    return [
+                    $formInfos->max = $this->getMaxFromLength();
+                    $formInfos->min = $this->getMinFromLength();
+                    return (object) [
                         'type' => 'number-input',
-                        'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([
-                            'max' => $this->getMaxFromLength(),
-                            'min' => $this->getMinFromLength(),
-                        ], $translationPrefix)),
+                        'data' => $this->setFormInfosWithPlaceholder($formInfos, $translationPrefix),
                     ];
                 case 'varchar':
-                    return [
+                    $formInfos->maxlength = $this->getLength();
+                    $formInfos->minlength = 0;
+                    return (object) [
                         'type' => 'text-input',
-                        'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([
-                            'maxlength' => $this->getLength(),
-                            'minlength' => 0,
-                        ], $translationPrefix)),
+                        'data' => $this->setFormInfosWithPlaceholder($formInfos, $translationPrefix),
                     ];
                 case 'text':
                 case 'mediumtext':
                 case 'largetext':
-                    return [
+                    return (object) [
                         'type' => 'textarea',
-                        'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([], $translationPrefix)),
+                        'data' => $this->setFormInfosWithPlaceholder($formInfos, $translationPrefix),
                     ];
                 case 'date':
-                    return [
+                    return (object) [
                         'type' => 'input',
-                        'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([], $translationPrefix)),
+                        'data' => $this->setFormInfosWithPlaceholder($formInfos, $translationPrefix),
                     ];
                 case 'timestamp':
-                    return [
+                    return (object) [
                         'type' => 'datetime-input',
-                        'data' => array_merge($formInfos, $this->getFormInfosWithPlaceholder([], $translationPrefix)),
+                        'data' => $this->setFormInfosWithPlaceholder($formInfos, $translationPrefix),
                     ];
                 default:
                     $this->invalidColumnType();
@@ -86,10 +82,10 @@ class SimpleColumnInfos extends ColumnInfos {
         }
     }
 
-    public function getFormInfosWithPlaceholder($formInfos, $translationPrefix) {
+    public function setFormInfosWithPlaceholder($formInfos, $translationPrefix) {
         $placeholderTranslationName = $translationPrefix .  '.' . $this->name . '.placeholder';
         if (Lang::has($placeholderTranslationName)) {
-            $formInfos['placeholder'] = __($placeholderTranslationName);
+            $formInfos->placeholder = __($placeholderTranslationName);
         }
         return $formInfos;
     }
@@ -114,6 +110,10 @@ class SimpleColumnInfos extends ColumnInfos {
 
     public function isCheckBox() {
         return $this->getDataType() == 'tinyint' && $this->getLength() == 1;
+    }
+
+    public function isDatetime() {
+        return $this->getDataType() == 'timestamp';
     }
 
     public function getDataType() {
@@ -181,7 +181,7 @@ class SimpleColumnInfos extends ColumnInfos {
     public function getFilterFormInfos(string $translationPrefix = '') {
         switch ($this->getDataType()) {
             case 'bit':
-                return [
+                return (object) [
                     'type' => 'checkbox-input',
                     'data' => $this->getFilterFormInfosWithValue(),
                 ];
@@ -190,13 +190,13 @@ class SimpleColumnInfos extends ColumnInfos {
             case 'decimal':
             case 'tinyint':
                 $filterFormInfos = $this->getFilterFormInfosWithFromToValue();
-                if (array_key_exists('from_value', $filterFormInfos)) {
-                    $filterFormInfos['from_value'] = (int)$filterFormInfos['from_value'];
+                if (isset($filterFormInfos->from_value)) {
+                    $filterFormInfos->from_value = (int)$filterFormInfos->from_value;
                 }
-                if (array_key_exists('to_value', $filterFormInfos)) {
-                    $filterFormInfos['to_value'] = (int)$filterFormInfos['to_value'];
+                if (isset($filterFormInfos->to_value)) {
+                    $filterFormInfos->to_value = (int)$filterFormInfos->to_value;
                 }
-                return [
+                return (object) [
                     'type' => 'number-input',
                     'data' => $filterFormInfos,
                 ];
@@ -204,17 +204,17 @@ class SimpleColumnInfos extends ColumnInfos {
             case 'text':
             case 'mediumtext':
             case 'largetext':
-                return [
+                return (object) [
                     'type' => 'text-input',
                     'data' => $this->getFilterFormInfosWithValue(),
                 ];
             case 'date':
-                return [
+                return (object) [
                     'type' => 'date-input',
                     'data' => $this->getFilterFormInfosWithFromToValue(),
                 ];
             case 'timestamp':
-                return [
+                return (object) [
                     'type' => 'datetime-input',
                     'data' => $this->getFilterFormInfosWithFromToValue(),
                 ];
@@ -231,8 +231,8 @@ class SimpleColumnInfos extends ColumnInfos {
 
     public function getFilterFormInfosWithFromToValue(string $translationPrefix = '') {
         $filterFormInfos = parent::getFilterFormInfos($translationPrefix);
-        $filterFormInfos['from_label'] = __('from');
-        $filterFormInfos['to_label'] = __('to');
+        $filterFormInfos->from_label = __('from');
+        $filterFormInfos->to_label = __('to');
         $filterFormInfos = $this->setFilterFormInfoValue($filterFormInfos, 'from_value');
         $filterFormInfos = $this->setFilterFormInfoValue($filterFormInfos, 'to_value');
         return $filterFormInfos;

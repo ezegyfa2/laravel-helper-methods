@@ -15,16 +15,16 @@ class BlueAdminController
     public $templateFolderPath = __DIR__ . '/../Templates';
 
     public function getSidebarSections() {
-        return array_values(array_map(function($tableName) {
+        return array_values(array_map(function($tableInfo) {
             return (object)[
                 'type' => 'blue-admin-sidebar-navigation-link',
                 'data' => (object)[
-                    'url' => '/admin/' . $tableName,
-                    'icon_class' => $this->getIconClass($tableName),
-                    'content' => str_replace('_', ' ', $tableName)
+                    'url' => '/admin/' . $tableInfo->getNameInUrlFormat(),
+                    'icon_class' => $this->getIconClass($tableInfo->name),
+                    'content' => $tableInfo->getNameInNormalFormat()
                 ]
             ];
-        }, DatabaseInfos::getCrmTableNames()));
+        }, DatabaseInfos::getTableInfos()));
     }
 
     public function getNotificationFormInfos() {

@@ -87,4 +87,54 @@ class HelperTableMethods
             return $convertedRow;
         }, $rows);
     }
+
+    public static function addJoin($query, $referenceTableName, $columnName, $referenceColumnName, $joinType = 'inner') {
+        $currentReferenceTableName = static::getFreeJoinTableName($query, $referenceTableName);
+        $currentReferenceColumnName = static::replaceTableName($referenceColumnName, $currentReferenceTableName);
+        switch ($joinType) {
+            case 'inner':
+                return $query->join($currentReferenceTableName, $columnName, $currentReferenceColumnName);
+            case 'left':
+                return $query->leftJoin($currentReferenceTableName, $columnName, $currentReferenceColumnName);
+            case 'right':
+                return $query->rightJoin($currentReferenceTableName, $columnName, $currentReferenceColumnName);
+            case 'cross':
+                return $query->crossJoin($currentReferenceTableName, $columnName, $currentReferenceColumnName);
+        }
+    }
+
+    public static function getFreeJoinTableName($query, $tableName) {
+        $tableNames = static::getTableNames($query);
+        $currentTableName = $tableName;
+        $helperIndex = 1;
+        while (in_array($currentTableName, $tableNames)) {
+            $currentTableName = $tableName . ' AS ' . $tableName . $helperIndex;
+            ++$helperIndex;
+        }
+        return $currentTableName;
+    }
+
+    public static function replaceTableName($columnName, $tableName) {
+        $columnNameParts = explode('.', $columnName);
+        $currentTableName = explode(' AS ', $tableName)[0];
+        if (count($columnNameParts) > 1) {
+            return str_replace($columnNameParts[count($columnNameParts) - 2], $currentTableName, $columnName);
+        }
+        else {
+            return $columnName;
+        }
+    }
+
+    public static function getTableNames($query) {
+        if ($query->joins) {
+            $tableNames = array_map(function($join) {
+                return $join->table;
+            }, $query->joins);
+            array_push($tableNames, $query->from);
+            return $tableNames;
+        }
+        else {
+            return [ $query->from ];
+        }
+    }
 }

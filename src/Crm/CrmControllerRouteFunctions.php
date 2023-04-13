@@ -12,47 +12,6 @@ use Illuminate\Support\Facades\Session;
 
 trait CrmControllerRouteFunctions
 {
-    public function index()
-    {
-        return $this->getIndexView(static::getTableName());
-    }
-
-    /*public function query()
-    {
-        return static::getQuery(static::getTableName());
-    }
-
-    public function create()
-    {
-        return static::getCreateView(static::getTableName()); 
-    }
-
-    public function store(Request $request)
-    {
-        return static::processStore($request, static::getTableName()); 
-    }
-
-    public function show($id)
-    {
-        return static::getShowView($id, static::getTableName()); 
-    }*/
-
-
-    public function edit($id)
-    {
-        return $this->getEditView($id, static::getTableName()); 
-    }
-
-    public function update($id, Request $request)
-    {
-        return $this->processUpdate($id, $request, static::getTableName());      
-    }
-
-    public function destroy($id)
-    {
-        return $this->processDestroy($id, static::getTableName());
-    }
-
     public function getIndexView(string $tableName)
     {
         $templateParams = $this->getLayoutTemplateParams($tableName);
@@ -62,16 +21,19 @@ trait CrmControllerRouteFunctions
 
     public function getTableData(string $tableName)
     {
-        $tableInfos = DatabaseInfos::getSpecificTableInfos($tableName, 'index');
+        $tableInfos = DatabaseInfos::getSpecificTableInfos($tableName, 'index', []);
         $selectedRowToShowCount = intval(request()->get('row-count', 10));
         $selectedPageNumber = intval(request()->get('page-number', 1));
+        //dd($tableInfos->getFilterFormInfos());
+        $filterSections = $tableInfos->getFilterFormInfos();
+        //dd($filterSections[0]);
         return (object)[
             'title' => $tableName,
             'row_to_show_counts' => [ 10, 25, 50 ],
             'selected_row_to_show_count' => $selectedRowToShowCount,
             'selected_page_number' => $selectedPageNumber,
             'filter_form_item_type_prefix' => 'bootstrap-filter',
-            'filter_sections' => $tableInfos->getFilterFormInfos()
+            'filter_sections' => $filterSections
         ];
     }
 
@@ -85,6 +47,7 @@ trait CrmControllerRouteFunctions
             'button_title' => 'Create',
             'form_item_sections' => $formItems,
         ];
+        //dd($templateParams);
         return DynamicTemplateMethods::getTemplateDynamicPage($this->editTemplateName, $templateParams);
     }
 
@@ -95,11 +58,19 @@ trait CrmControllerRouteFunctions
 
     public function getData(string $tableName)
     {
-        return DatabaseInfos::getSpecificTableInfos($tableName, 'index')->getDataResponse(
+        return DatabaseInfos::getSpecificTableInfos($tableName, 'index', [])->getDataResponse(
             intval(request()->get('row-count', 10)),
             intval(request()->get('page-number', 1)),
             request()->get('filter-data', [])
         );
+    }
+
+    public function getSelectOptions(string $tableName)
+    {
+        $columnName = request()->get('column-name');
+        $tableInfos = DatabaseInfos::getSpecificTableInfos($tableName, 'index');
+        $relationInfos = $tableInfos->getColumnRelation($tableInfos->columnInfos[$columnName]);
+        return $relationInfos->getOptions(request()->get('searched-text', 10));
     }
 
     public function getEditView($id, string $tableName)
@@ -127,10 +98,10 @@ trait CrmControllerRouteFunctions
             }
             \DB::table($tableName)->delete($id);
             return redirect()->route($tableName . '.index')
-                             ->with('success_messages', ['Model was successfully deleted!']);
+                             ->with('success_messages', [ 'Model was successfully deleted!' ]);
         } catch (\Exception $exception) {
             return back()->withInput()
-                         ->with('error_messages', ['Unexpected error occurred while trying to process your request!']);
+                         ->with('error_messages', [ 'Unexpected error occurred while trying to process your request!' ]);
         }
     }
 
