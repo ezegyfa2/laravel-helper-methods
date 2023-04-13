@@ -25,7 +25,7 @@ trait CrmControllerRouteFunctions
         $selectedRowToShowCount = intval(request()->get('row-count', 10));
         $selectedPageNumber = intval(request()->get('page-number', 1));
         //dd($tableInfos->getFilterFormInfos());
-        $filterSections = $tableInfos->getFilterFormInfos();
+        $filterSections = $tableInfos->getFilterFormInfos('admin.' . $tableName);
         //dd($filterSections[0]);
         return (object)[
             'title' => $tableName,
@@ -61,7 +61,8 @@ trait CrmControllerRouteFunctions
         return DatabaseInfos::getSpecificTableInfos($tableName, 'index', [])->getDataResponse(
             intval(request()->get('row-count', 10)),
             intval(request()->get('page-number', 1)),
-            request()->get('filter-data', [])
+            request()->get('filter-data', []),
+            'admin.' . $tableName
         );
     }
 

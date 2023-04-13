@@ -183,13 +183,13 @@ class SimpleColumnInfos extends ColumnInfos {
             case 'bit':
                 return (object) [
                     'type' => 'checkbox-input',
-                    'data' => $this->getFilterFormInfosWithValue(),
+                    'data' => $this->getFilterFormInfosWithValue($translationPrefix),
                 ];
             case 'int':
             case 'bigint':
             case 'decimal':
             case 'tinyint':
-                $filterFormInfos = $this->getFilterFormInfosWithFromToValue();
+                $filterFormInfos = $this->getFilterFormInfosWithFromToValue($translationPrefix);
                 if (isset($filterFormInfos->from_value)) {
                     $filterFormInfos->from_value = (int)$filterFormInfos->from_value;
                 }
@@ -206,17 +206,17 @@ class SimpleColumnInfos extends ColumnInfos {
             case 'largetext':
                 return (object) [
                     'type' => 'text-input',
-                    'data' => $this->getFilterFormInfosWithValue(),
+                    'data' => $this->getFilterFormInfosWithValue($translationPrefix),
                 ];
             case 'date':
                 return (object) [
                     'type' => 'date-input',
-                    'data' => $this->getFilterFormInfosWithFromToValue(),
+                    'data' => $this->getFilterFormInfosWithFromToValue($translationPrefix),
                 ];
             case 'timestamp':
                 return (object) [
                     'type' => 'datetime-input',
-                    'data' => $this->getFilterFormInfosWithFromToValue(),
+                    'data' => $this->getFilterFormInfosWithFromToValue($translationPrefix),
                 ];
             default:
                 $this->invalidColumnType();

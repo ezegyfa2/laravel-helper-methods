@@ -102,7 +102,7 @@ class TableInfos {
         }, $this->columnInfos));
     }
 
-    public function getDataResponse(int $rowToShowCount, int $selectedPageNumber, array $filters) {
+    public function getDataResponse(int $rowToShowCount, int $selectedPageNumber, array $filters, $translationPrefix = '') {
         $columnNames = $this->getColumnNamesWithRelatedTableName();
         $rows = $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
         \Log::debug($rowToShowCount);
@@ -114,7 +114,7 @@ class TableInfos {
             'total_row_count' => $totalRowCount,
             'column_names' => $columnNames,
             'rows' => $rows,
-            'filter_sections' => $this->getFilterFormInfos()
+            'filter_sections' => $this->getFilterFormInfos($translationPrefix)
         ]);
     }
 
@@ -156,13 +156,13 @@ class TableInfos {
     }
 
     public function getFilterFormInfos($translationPrefix = '') {
-        $filterFormInfos = array_map(function ($columnInfos) {
+        $filterFormInfos = array_map(function ($columnInfos) use($translationPrefix) {
             $columnRelation = $this->getColumnRelation($columnInfos);
             if ($columnRelation) {
-                return $columnRelation->getFilterFormInfos();
+                return $columnRelation->getFilterFormInfos($translationPrefix);
             }
             else {
-                return $columnInfos->getFilterFormInfos();
+                return $columnInfos->getFilterFormInfos($translationPrefix);
             }
         }, array_values($this->columnInfos));
         return $filterFormInfos;
