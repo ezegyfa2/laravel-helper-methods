@@ -12,11 +12,12 @@ class BlueAdminController
     
     public $indexTemplateName = 'blue_admin_index';
     public $editTemplateName = 'blue_admin_edit';
-    public $templateFolderPath = __DIR__ . '/../Templates';
+    public $templateFolderPath = __DIR__ . '\\..\\Templates';
+    public $filterFormItemPrefix = 'data-collector-filter';
 
     public function getSidebarSections() {
         return array_values(array_map(function($tableInfo) {
-            return (object)[
+            return (object) [
                 'type' => 'blue-admin-sidebar-navigation-link',
                 'data' => (object)[
                     'url' => '/admin/' . $tableInfo->getNameInUrlFormat(),
