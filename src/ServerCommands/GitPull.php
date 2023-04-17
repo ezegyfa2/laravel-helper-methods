@@ -1,6 +1,6 @@
 <?php
 
-namespace Ezegyfa\LaravelHelperMethods;
+namespace Ezegyfa\LaravelHelperMethods\ServerCommands;
 
 use Illuminate\Console\Command;
 use GuzzleHttp\Client;
@@ -39,7 +39,7 @@ class GitPull extends Command
     public function handle()
     {
         $client = new Client();
-        $res = $client->get('http://dynamic-web.test/git-pull?password=' . ServerCommandMethods::getPassword());
+        $res = $client->get('http://dynamic-web-consulting.com/git-pull?password=' . ServerCommandMethods::getPassword());
         echo $res->getStatusCode(); // 200
         echo $res->getBody();
         return 0;

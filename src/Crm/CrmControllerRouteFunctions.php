@@ -32,7 +32,7 @@ trait CrmControllerRouteFunctions
             'row_to_show_counts' => [ 10, 25, 50 ],
             'selected_row_to_show_count' => $selectedRowToShowCount,
             'selected_page_number' => $selectedPageNumber,
-            'filter_form_item_type_prefix' => 'bootstrap-filter',
+            'filter_form_item_type_prefix' => $this->filterFormItemPrefix,
             'filter_sections' => $filterSections
         ];
     }
@@ -150,6 +150,6 @@ trait CrmControllerRouteFunctions
 
     public function getCompiledTemplatePath(string $tableName, string $templateName)
     {
-        return $this->templateFolderPath . '/' . $templateName . '_compiled.json';
+        return $this->templateFolderPath . '\\' . $templateName . '_compiled.json';
     }
 }
