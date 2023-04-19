@@ -8,10 +8,10 @@ class ServerCommandMethods
 {
     public static function registerServerCommandRoutes() {
         Route::get('/git-pull', function () {
-            return static::executeCommand('git-pull');
+            return static::executeCommand('git_pull');
         });
         Route::get('/git-reset', function () {
-            return static::executeCommand('git-reset');
+            return static::executeCommand('git_reset');
         });
     }
 

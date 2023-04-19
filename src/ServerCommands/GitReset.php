@@ -5,7 +5,7 @@ namespace Ezegyfa\LaravelHelperMethods\ServerCommands;
 use Illuminate\Console\Command;
 use GuzzleHttp\Client;
 
-class GitPull extends Command
+class GitReset extends Command
 {
     /**
      * The name and signature of the console command.
