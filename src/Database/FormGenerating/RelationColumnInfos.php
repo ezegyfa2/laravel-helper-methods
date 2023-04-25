@@ -38,12 +38,6 @@ class RelationColumnInfos extends ColumnInfos {
         $formInfoData = parent::getFilterFormInfos($translationPrefix);
         $formInfoData = $this->setFilterFormInfoValue($formInfoData, 'value');
         $formInfoData = $this->setOptions($formInfoData);
-        if (isset($formInfoData->options)) {
-            array_push($formInfoData->options, (object) [
-                'text' => 'No filter',
-                'value' => 'no_filter',
-            ]);
-        }
         return (object) [
             'type' => 'select',
             'data' => $formInfoData
@@ -73,23 +67,20 @@ class RelationColumnInfos extends ColumnInfos {
         if ($searchedText) {
             $query = $query->where(\DB::raw($this->getRenderSelect()), 'LIKE', \DB::raw('\'%' . $searchedText . '%\''));
         }
-        if ($this->optionCreator) {
-            $rows = $query->select()->get();
-            return array_map($this->optionCreator, $rows);
+        if ($query->count() > 20) {
+            return __('admin.index.too_many_result');
         }
         else {
-            $renderColumnNames = $this->getRenderColumnNamesWithTableName($this->getReferenceTableName());
-            array_push($renderColumnNames, $this->getReferenceTableName() . '.id');
-            $query = $query->select($renderColumnNames);
-            if ($query->count() > 20) {
-                return [];
-                /*return [
-                    'message' => __('admin.index.too_many_result')
-                ];*/
+            if ($this->optionCreator) {
+                $rows = $query->select()->get();
+                return array_map($this->optionCreator, $rows);
             }
             else {
+                $renderColumnNames = $this->getRenderColumnNamesWithTableName($this->getReferenceTableName());
+                array_push($renderColumnNames, $this->getReferenceTableName() . '.id');
+                $query = $query->select($renderColumnNames);
                 $rows = $query->select($renderColumnNames)->get()->toArray();
-                return array_map(function($row) use($renderColumnNames) {
+                return array_map(function($row) {
                     return (object) [
                         'text' => $this->getRowLabel($row, $this->getRenderColumnNames()),
                         'value' => $row->id,
@@ -97,6 +88,7 @@ class RelationColumnInfos extends ColumnInfos {
                 }, $rows);
             }
         }
+        
     }
 
     public function getRenderValues(int $selectedPageNumber, int $rowToShowCount) {

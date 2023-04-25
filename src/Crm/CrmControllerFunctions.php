@@ -9,21 +9,6 @@ trait CrmControllerFunctions
 {
     use CrmControllerRouteFunctions, CrmControllerRouteInitializing;
 
-    public function getTableIconClasses()
-    {
-        if (\Schema::hasTable('mytable')) {
-            $rawIconClasses = \DB::table('table_icon_classes')->select(['table_name', 'icon_class'])->get();
-            $iconClasses = [];
-            foreach ($rawIconClasses as $rawIconClass) {
-                $iconClasses[$rawIconClass->table_name] = $rawIconClass->icon_class;
-            }
-            return $iconClasses;
-        }
-        else {
-            return [];
-        }
-    }
-
     private $iconClasses = null;
     public function getIconClass($tableName)
     {
@@ -35,6 +20,21 @@ trait CrmControllerFunctions
         }
         else {
             return "";
+        }
+    }
+
+    public function getTableIconClasses()
+    {
+        if (\Schema::hasTable('table_icon_classes')) {
+            $rawIconClasses = \DB::table('table_icon_classes')->select(['table_name', 'icon_class'])->get();
+            $iconClasses = [];
+            foreach ($rawIconClasses as $rawIconClass) {
+                $iconClasses[$rawIconClass->table_name] = $rawIconClass->icon_class;
+            }
+            return $iconClasses;
+        }
+        else {
+            return [];
         }
     }
 

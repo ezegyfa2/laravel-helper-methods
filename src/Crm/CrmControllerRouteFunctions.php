@@ -9,6 +9,7 @@ use Ezegyfa\LaravelHelperMethods\HttpMethods;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use stdClass;
 
 trait CrmControllerRouteFunctions
 {
@@ -109,6 +110,7 @@ trait CrmControllerRouteFunctions
     public function getLayoutTemplateParams(string $tableName)
     {
         $templateParams = DynamicTemplateMethods::getTranslatedTemplateParamsFromFile($this->getCompiledTemplatePath($tableName, "index"));
+        //$templateParams = new stdClass;
         $templateParams->sidebar_sections = $this->getSidebarSections();
         $this->addSessionDataToTemplateParams($templateParams, 'success_messages');
         $this->addSessionDataToTemplateParams($templateParams, 'error_messages');

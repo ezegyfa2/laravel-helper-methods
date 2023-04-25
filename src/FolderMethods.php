@@ -65,7 +65,22 @@ class FolderMethods
         return rmdir($dir);
     }
 
-    public static function combinePaths(string $path1, string $path2) {
-        return str_replace('\\', '/', $path1 . '/' . $path2);
+    public static function combinePaths(...$paths) {
+        $standardPaths = array_map(function ($path) {
+            $path = str_replace('\\', '/', $path);
+            if (substr($path, -1) == '/') {
+                return substr($path, 0, strlen($path) - 1);
+            }
+            else {
+                return $path;
+            }
+        }, $paths);
+        return StringMethods::concatenateStrings($standardPaths, '/');
+    }
+
+    public static function createIfNotExists(string $path) {
+        if (!file_exists($path)) {
+            mkdir($path);
+        }
     }
 }
