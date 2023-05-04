@@ -13,6 +13,10 @@ class ServerCommandMethods
         Route::get('/git-reset', function () {
             return static::executeCommand('git_reset');
         });
+        Route::get('/clear', function () {
+            \Artisan::call('cache:clear');
+            \Artisan::call('config:clear');
+        });
     }
 
     public static function executeCommand(string $commandName) {

@@ -119,16 +119,6 @@ class DesignerMethods
         });*/
     }
 
-    public static function getTemplatesFolderPath() {
-        return FolderMethods::combinePaths(
-            config('app.node_modules_folder_path'), 
-            'Vue',
-            config('app.designer_node_module_name'), 
-            'src',
-            'Templates'
-        );
-    }
-
     public static function getCurrentTemplate() {
         $templateName = request()->get('template-name');
         $templatePath = static::getTemplatePath($templateName);
@@ -139,6 +129,16 @@ class DesignerMethods
         else {
             return null;
         }
+    }
+
+    public static function getTemplatesFolderPath() {
+        return FolderMethods::combinePaths(
+            config('app.node_modules_folder_path'), 
+            'Vue',
+            config('app.designer_node_module_name'), 
+            'src',
+            'Templates'
+        );
     }
 
     public static function getTemplatePath(string $templateName) {

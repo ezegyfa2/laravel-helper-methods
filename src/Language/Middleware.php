@@ -30,6 +30,9 @@ class Middleware
     }
 
     protected function getRouteTranslationLanguage(?string $urlPath) {
+        if (strpos('/', $urlPath) == 0) {
+            $urlPath = substr($urlPath, 1);
+        }
         $routeTranslations = LanguageMethods::getTranslations('routes');
         foreach (LanguageMethods::getTranslatedLanguages() as $language) {
             if (is_array($routeTranslations[$language]) && in_array($urlPath, $routeTranslations[$language])) {

@@ -26,13 +26,16 @@ class LanguageMethods
         }
         $urlPathTranslationKey = static::getTranslationKey($urlPath);
         if ($urlPathTranslationKey) {
-            return array_map(function($language) use($urlPath, $urlPathTranslationKey) {
+            $currentLanguage = App::currentLocale();
+            $translationUrlObjects = array_map(function($language) use($urlPath, $urlPathTranslationKey) {
                 App::setLocale($language);
                 return (object) [
                     'name' => strtoupper($language),
                     'url' => str_replace($urlPath, __('routes.' . $urlPathTranslationKey), \URL::full()),
                 ];
             }, static::getTranslatedLanguages());
+            App::setLocale($currentLanguage);
+            return $translationUrlObjects;
         }
         else {
             return static::getLanguageUrlObjects();
@@ -105,11 +108,13 @@ class LanguageMethods
     }
 
     public static function getTranslations(string $translationFileName) {
+        $currentLanguage = App::currentLocale();
         $translations = [];
         foreach (static::getTranslatedLanguages() as $language) {
             App::setLocale($language);
             $translations[$language] = \Lang::get($translationFileName);
         }
+        App::setLocale($currentLanguage);
         return $translations;
     }
 
