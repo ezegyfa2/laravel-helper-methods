@@ -4,6 +4,29 @@ namespace Ezegyfa\LaravelHelperMethods;
 
 class FolderMethods
 {
+    public static function getFolderFilePathsRecoursively($folderPath)
+    {
+        $folderFilePaths = static::getFolderFilePaths($folderPath);
+        $subFolders = static::getFolderSubFolders($folderPath);
+        $folderFilePaths = array_diff($folderFilePaths, $subFolders);
+        $folderFilePaths = array_map(function($folderFilePath) use($folderPath) {
+            return static::combinePaths($folderPath, $folderFilePath);
+        }, $folderFilePaths);
+        foreach ($subFolders as $subFolder) {
+            $subFolderPath = static::combinePaths($folderPath, $subFolder);
+            $folderFilePaths = array_merge($folderFilePaths, static::getFolderFilePathsRecoursively($subFolderPath));
+        }
+        return array_values($folderFilePaths);
+    }
+
+    public static function getFolderFilePaths($folderPath)
+    {
+        $folderFiles = scandir($folderPath);
+        unset($folderFiles[array_search('.', $folderFiles, true)]);
+        unset($folderFiles[array_search('..', $folderFiles, true)]);
+        return array_values($folderFiles);
+    }
+
     public static function getFolderFilesRecoursively($folderPath)
     {
         $folderFiles = static::getFolderFiles($folderPath);

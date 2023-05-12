@@ -109,7 +109,7 @@ class SimpleColumnInfos extends ColumnInfos {
     }
 
     public function isCheckBox() {
-        return $this->getDataType() == 'tinyint' && $this->getLength() == 1;
+        return ($this->getDataType() == 'tinyint' && $this->getLength() == 1) || $this->getDataType() == 'bit';
     }
 
     public function isDatetime() {

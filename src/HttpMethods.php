@@ -100,11 +100,11 @@ class HttpMethods
         foreach ($tableInfos->getColumnNames() as $columnName) {
             if ($tableInfos->isCheckBox($columnName)) {
                 if (array_key_exists($columnName, $requestData)) {
-                    if ($requestData[$columnName] == 'on') {
-                        return 1;
+                    if ($requestData[$columnName] == 'on' || $requestData[$columnName] == 1) {
+                        $requestData[$columnName] = true;
                     }
-                    else if ($requestData[$columnName] == 'off') {
-                        return 0;
+                    else if ($requestData[$columnName] == 'off' || $requestData[$columnName] == 0) {
+                        $requestData[$columnName] = false;
                     }
                     else {
                         throw new \Exception('Invalid checkbox value');

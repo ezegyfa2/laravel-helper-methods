@@ -46,6 +46,7 @@ class RelationColumnInfos extends ColumnInfos {
 
     public function setOptions($formInfoData) {
         if (\DB::table($this->getReferenceTableName())->count() > 20) {
+            $formInfoData->options = [];
             $formInfoData->data_url = '/admin/' . $this->tableInfos->name .'/get-select-options';
             $formInfoData->data_infos = [
                 'column-name' => $this->referenceColumnName,

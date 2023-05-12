@@ -28,13 +28,14 @@ trait CrmControllerRouteFunctions
         //dd($tableInfos->getFilterFormInfos());
         $filterSections = $tableInfos->getFilterFormInfos('admin.' . $tableName);
         //dd($filterSections[0]);
-        return (object)[
+        return (object) [
             'title' => $tableName,
             'row_to_show_counts' => [ 10, 25, 50 ],
             'selected_row_to_show_count' => $selectedRowToShowCount,
             'selected_page_number' => $selectedPageNumber,
             'filter_form_item_type_prefix' => $this->filterFormItemPrefix,
-            'filter_sections' => $filterSections
+            'filter_sections' => $filterSections,
+            'rows' => []
         ];
     }
 

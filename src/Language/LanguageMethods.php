@@ -25,6 +25,7 @@ class LanguageMethods
             $urlPath = substr($urlPath, 1);
         }
         $urlPathTranslationKey = static::getTranslationKey($urlPath);
+        //dd($urlPathTranslationKey);
         if ($urlPathTranslationKey) {
             $currentLanguage = App::currentLocale();
             $translationUrlObjects = array_map(function($language) use($urlPath, $urlPathTranslationKey) {

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace Ezegyfa\LaravelHelperMethods;
 
 use Closure;
 
-class HttpsProtocol {
+class HttpsRedirecter {
 
     public function handle($request, Closure $next)
     {

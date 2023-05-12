@@ -13,7 +13,6 @@ class DesignerMethods
                 'template_name' => 'required|string',
             ]);
             $templateName = $request->get('template_name');
-            \Log::debug($templateName);
             file_put_contents(
                 static::getTemplatePath($templateName), 
                 $request->get('template'), 
@@ -27,46 +26,58 @@ class DesignerMethods
             shell_exec('npm run dev');
         });*/
         Route::get('/designer', function() {
+            $template = static::getBaseTemplateObject();
+            $template->data->saved_templates = static::getSavedTemplates();
             $templateName = request()->get('template-name');
-            $template = (object) [
-                'type' => 'web-designer-page-designer',
-                'data' => new stdClass,
-            ];
             if ($templateName) {
-                $template->data->template = json_decode(file_get_contents(static::getTemplatePath($templateName)));
-                $template->data->saved_template_names = array_map(function ($fileName) {
-                    return pathinfo($fileName, PATHINFO_FILENAME);
-                }, FolderMethods::getFolderFilesRecoursively(static::getTemplatesFolderPath()));
+                $loadedTemplate = json_decode(file_get_contents(static::getTemplatePath($templateName)));
+                array_push($template->data->template->data->base_item_sections, $loadedTemplate);
             }
             return view('layouts.dynamicPage', compact('template'));
         });
         Route::get('designer/template', function() {
-            $template = static::getCurrentTemplate();
-            if ($template) {
-                return response()->json(json_decode($template));
+            $templateName = request()->get('template-name');
+            if ($templateName) {
+                $template = static::getTemplate($templateName);
+                return response()->json($template);
+            }
+            else {
+                return response()->json(static::getSavedTemplates());
+            }
+        });
+        Route::post('designer/template', function() {
+            //CheckingMethods::checkConfigValueIsSet('app.node_modules_folder_path');
+            //CheckingMethods::checkConfigValueIsSet('app.designer_node_module_name');
+            if (request()->has('template') && request()->has('template_name')) {
+                $templateContent = json_encode(json_decode(request()->input()['template']), JSON_PRETTY_PRINT);
+                $templateName = request()->input()['template_name'];
+                $componentFolderPath = static::getTemplatesFolderPath();
+                FolderMethods::createIfNotExists($componentFolderPath);
+                file_put_contents(FolderMethods::combinePaths($componentFolderPath, $templateName . '.json'), $templateContent);
+                return response()->json([
+                    'message' => 'success',
+                ]);
             }
             else {
                 return response()->json([
-                    'massage' => 'Invalid template-name, template not found'
+                    'message' => 'Template is required',
                 ]);
             }
         });
-        Route::post('/designer/template', function() {
-            CheckingMethods::checkConfigValueIsSet('app.node_modules_folder_path');
-            CheckingMethods::checkConfigValueIsSet('app.designer_node_module_name');
-            $templateContent = 'export default ' . json_encode(request()->input()['template'], JSON_PRETTY_PRINT);
-            $templateName = request()->input()['template_name'];
-            $componentFolderPath = static::getTemplatesFolderPath();
-            FolderMethods::createIfNotExists($componentFolderPath);
-            file_put_contents(FolderMethods::combinePaths($componentFolderPath, $templateName . '.js'), $templateContent);
-
-            return response()->json([
-                'message' => 'Success',
-            ]);
-        });
         Route::get('/designer/result', function () {
-            $templatePath = static::getTemplatePath(request()->get('template-name'));
-            $template = file_get_contents($templatePath);
+            $templateName = request()->get('template-name');
+            if ($templateName) {
+                $templatePath = static::getTemplatePath($templateName);
+                if (file_exists($templatePath)) {
+                    $template = file_get_contents($templatePath);
+                }
+                else {
+                    $template = new stdClass;
+                }
+            }
+            else {
+                $template = new stdClass;
+            }
             return view('layouts.dynamicPage', compact('template'));
         });
         /*Route::get('/translated-designer-result', function () use($templatePath) {
@@ -119,8 +130,32 @@ class DesignerMethods
         });*/
     }
 
-    public static function getCurrentTemplate() {
-        $templateName = request()->get('template-name');
+    public static function getBaseTemplateObject() {
+        return (object) [
+            'type' => 'web-designer-page-designer',
+            'data' => (object) [
+                'template' => (object) [
+                    'type' => 'web-designer-base-array',
+                    'data' => (object) [
+                        'base_item_sections' => []
+                    ],
+                ]
+            ],
+        ];
+    }
+
+    public static function getSavedTemplates() {
+        $savedTemplatePaths = FolderMethods::getFolderFilePathsRecoursively(static::getTemplatesFolderPath());
+        $savedTemplates = [];
+        foreach ($savedTemplatePaths as $savedTemplatePath) {
+            $fileName = pathinfo($savedTemplatePath, PATHINFO_FILENAME);
+            $templateContent = str_replace('export default ', '', file_get_contents($savedTemplatePath));
+            $savedTemplates[$fileName] = json_decode($templateContent);
+        }
+        return $savedTemplates;
+    }
+
+    public static function getTemplate($templateName) {
         $templatePath = static::getTemplatePath($templateName);
         $templateText = file_get_contents($templatePath);
         if ($templateText) {
@@ -132,13 +167,14 @@ class DesignerMethods
     }
 
     public static function getTemplatesFolderPath() {
-        return FolderMethods::combinePaths(
+        /*return FolderMethods::combinePaths(
             config('app.node_modules_folder_path'), 
             'Vue',
             config('app.designer_node_module_name'), 
             'src',
             'Templates'
-        );
+        );*/
+        return base_path('app/Templates');
     }
 
     public static function getTemplatePath(string $templateName) {
