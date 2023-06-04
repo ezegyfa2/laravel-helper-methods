@@ -92,12 +92,24 @@ class LanguageMethods
     }
 
     public static function createTranslatedGetRoutes(string $url, $controllerAction) {
+        static::createTranslatedRoutes($url, $controllerAction, function($urlParam, $controllerActionParam) {
+            Route::get($urlParam, $controllerActionParam);
+        });
+    }
+
+    public static function createTranslatedPostRoutes(string $url, $controllerAction) {
+        static::createTranslatedRoutes($url, $controllerAction, function($urlParam, $controllerActionParam) {
+            Route::post($urlParam, $controllerActionParam);
+        });
+    }
+
+    public static function createTranslatedRoutes(string $url, $controllerAction, $routeCreator) {
         $urlToTranslate = str_replace('/', '.', $url);
-        Route::get($url, $controllerAction);
+        $routeCreator($url, $controllerAction);
         $currentLanguage = App::currentLocale();
         foreach(static::getTranslatedLanguages() as $language) {
             App::setLocale($language);
-            Route::get('/' . __('routes' . $urlToTranslate), $controllerAction);
+            $routeCreator('/' . __('routes' . $urlToTranslate), $controllerAction);
         }
         App::setLocale($currentLanguage);
     }
