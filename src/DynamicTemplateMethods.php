@@ -4,20 +4,17 @@ namespace Ezegyfa\LaravelHelperMethods;
 
 class DynamicTemplateMethods
 {
-    public static function getTemplateDynamicPage($templateTypeName, $templateParams = [], $scriptName = 'app') {
-        $template = static::getViewTemplate($templateTypeName, $templateParams);
-        return view('layouts.dynamicPage', compact('template', 'scriptName'));
+    public static function getTranslatedTemplateDynamicPage($templateTypeName, $compiledTemplatePath, $templateParams = new \stdObject, $scriptName = 'app') {
+        $templatePath = base_path($compiledTemplatePath);
+        foreach (static::getTranslatedTemplateParamsFromFile($templatePath) as $key => $value) {
+            $templateParams->$key = $value;
+        }
+        //$templateParams = [];
+        return static::getTemplateDynamicPage($templateTypeName, $templateParams, $scriptName);
     }
 
-    // Must use templates becouse components doesn't compile templates
-    public static function getViewTemplate($templateTypeName, $templateParams = []) {
-        return (object) [
-            'type' => 'dynamic-template',
-            'data' => (object) [
-                'template_type_name' => $templateTypeName,
-                'params' => $templateParams
-            ]
-        ];
+    public static function getTemplateDynamicPage($templateTypeName, $templateParams = new \stdObject, $scriptName = 'app') {
+        return view('ezegyfa::dynamicPage', compact('templateTypeName', 'templateParams', 'scriptName'));
     }
 
     public static function getTranslatedTemplateParamsFromFile($templateFilePath, $paramPrefix = '') {
