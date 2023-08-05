@@ -4,6 +4,8 @@ namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
 use Ezegyfa\LaravelHelperMethods\StringMethods;
 use Ezegyfa\LaravelHelperMethods\Database\HelperTableMethods;
+use Ezegyfa\LaravelHelperMethods\Database\HelperMethods;
+
 
 class RelationColumnInfos extends ColumnInfos {
     public $referencedTableInfos;
@@ -111,7 +113,7 @@ class RelationColumnInfos extends ColumnInfos {
     }
 
     public function getRenderSelect() {
-        return 'CONCAT(' . StringMethods::concatenateStrings($this->getRenderColumnNamesWithTableName($this->getReferenceTableName()), ', " - ", ') . ')';
+        return 'CONCAT(' . StringMethods::concatenateStrings($this->getRenderColumnNamesWithTableName($this->getReferenceTableName()), ', " - ", ') . ') AS ' . $this->referenceColumnName;
     }
 
     public function getRenderColumnNamesWithTableName(string $tableName) {
@@ -174,6 +176,10 @@ class RelationColumnInfos extends ColumnInfos {
 
     public function getReferenceTableName() {
         return $this->referencedTableInfos->name;
+    }
+
+    public function getFakeValue() {
+        return HelperMethods::getRandomId($this->getReferenceTableName());
     }
 
     public function addFilterToQuery($tableName, $query, $filters) {

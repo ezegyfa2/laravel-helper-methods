@@ -22,7 +22,7 @@ trait CrmControllerRouteFunctions
 
     public function getTableData(string $tableName)
     {
-        $tableInfos = DatabaseInfos::getSpecificTableInfos($tableName, 'index', []);
+        $tableInfos = DatabaseInfos::getAdminTableInfos($tableName, 'index', []);
         $selectedRowToShowCount = intval(request()->get('row-count', 10));
         $selectedPageNumber = intval(request()->get('page-number', 1));
         //dd($tableInfos->getFilterFormInfos());
@@ -42,7 +42,7 @@ trait CrmControllerRouteFunctions
     public function getCreateView(string $tableName)
     {
         $templateParams = $this->getLayoutTemplateParams($tableName);
-        $formItems = DatabaseInfos::getSpecificTableInfos($tableName, 'create')->getFormInfos('admin.' . $tableName);
+        $formItems = DatabaseInfos::getAdminTableInfos($tableName, 'create')->getFormInfos('admin.' . $tableName);
         $templateParams->form_data = (object) [
             'title' => 'Create new ' . str_replace('_', ' ', Str::singular($tableName)),
             'url' => route($tableName . '.store'),
@@ -60,7 +60,7 @@ trait CrmControllerRouteFunctions
 
     public function getData(string $tableName)
     {
-        return DatabaseInfos::getSpecificTableInfos($tableName, 'index', [])->getDataResponse(
+        return DatabaseInfos::getAdminTableInfos($tableName, 'index', [])->getDataResponse(
             intval(request()->get('row-count', 10)),
             intval(request()->get('page-number', 1)),
             request()->get('filter-data', []),
@@ -71,7 +71,7 @@ trait CrmControllerRouteFunctions
     public function getSelectOptions(string $tableName)
     {
         $columnName = request()->get('column-name');
-        $tableInfos = DatabaseInfos::getSpecificTableInfos($tableName, 'index');
+        $tableInfos = DatabaseInfos::getAdminTableInfos($tableName, 'index');
         $relationInfos = $tableInfos->getColumnRelation($tableInfos->columnInfos[$columnName]);
         return $relationInfos->getOptions(request()->get('searched-text', 10));
     }
@@ -83,7 +83,7 @@ trait CrmControllerRouteFunctions
             'title' => 'Edit ' . str_replace('_', ' ', Str::singular($tableName)),
             'url' => route($tableName . '.update', [ 'id' => $id ]),
             'button_title' => 'Edit',
-            'form_item_sections' => DatabaseInfos::getSpecificTableInfos($tableName, 'edit')->getFormInfos('admin.' . $tableName, $id),
+            'form_item_sections' => DatabaseInfos::getAdminTableInfos($tableName, 'edit')->getFormInfos('admin.' . $tableName, $id),
         ];
         return DynamicTemplateMethods::getTemplateDynamicPage($this->editTemplateName, $templateParams);
     }

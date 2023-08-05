@@ -3,6 +3,7 @@
 namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
 use Illuminate\Support\Facades\Lang;
+use Faker\Factory;
 
 class SimpleColumnInfos extends ColumnInfos {
     public $name;
@@ -17,7 +18,7 @@ class SimpleColumnInfos extends ColumnInfos {
 
     public function getFormInfos(string $translationPrefix = '', $withOldValues = null, $value = null) {
         $formInfos = $this->getSpecificFormInfos($translationPrefix, $withOldValues, $value);
-        if ($this->name == 'phone' || $this->name == 'telephone') {
+        if ($this->isPhone()) {
             $formInfos->type = 'phone-input';
         }
         return (object)$formInfos;
@@ -26,7 +27,7 @@ class SimpleColumnInfos extends ColumnInfos {
     public function getSpecificFormInfos(string $translationPrefix = '', bool $withOldValues = true, $value = null) {
         $formInfos = parent::getFormInfos($translationPrefix, $withOldValues, $value);
         $dataType = $this->getDataType();
-        if (($dataType == 'varchar' || $dataType == 'text') && $this->name == 'email') {
+        if ($this->isEmail()) {
             $formInfos->maxlength = $this->getLength();
             $formInfos->minlength = 0;
             return [
@@ -90,51 +91,12 @@ class SimpleColumnInfos extends ColumnInfos {
         return $formInfos;
     }
 
-    public function getMinFromLength() {
-        if (str_contains('unsigned', $this->type)) {
-            return 0;
-        }
-        else {
-            return -$this->getMaxFromLength();
-        }
-    }
-
-    public function getMaxFromLength() {
-        $length = $this->getLength();
-        $max = 1;
-        for ($i = 0; $i < $length; ++$i) {
-            $max *= 10;
-        }
-        return $max;
-    }
-
-    public function isCheckBox() {
-        return ($this->getDataType() == 'tinyint' && $this->getLength() == 1) || $this->getDataType() == 'bit';
-    }
-
-    public function isDatetime() {
-        return $this->getDataType() == 'timestamp';
-    }
-
-    public function getDataType() {
-        $dataType = explode(' ', $this->type)[0];
-        return explode('(', $dataType)[0];
-    }
-
-    public function getLength() {
-        $length = explode('(', $this->type)[1];
-        $length = explode(',', $length)[0];
-        $length = explode(')', $length)[0];
-        $length = intval($length);
-        return $length;
-    }
-
     public function getValidator() {
         $validator = $this->getValidatorWithTypeValues();
-        if ($this->name == 'email') {
+        if ($this->isEmail()) {
             $validator[] = 'email';
         }
-        else if ($this->name == 'phone' || $this->name == 'telephone') {
+        else if ($this->isPhone()) {
             $validator[] = 'regex:/([0-9]|\+){0,14}/';
         }
         return $validator;
@@ -238,6 +200,46 @@ class SimpleColumnInfos extends ColumnInfos {
         return $filterFormInfos;
     }
 
+    public function getFakeValue() {
+        $faker = Factory::create();
+        if ($this->isEmail()) {
+            return $faker->email();
+        }
+        else if ($this->isPhone()) {
+            return $faker->numerify('##########');
+        }
+        else if ($this->isUrl()) {
+            return $faker->url();
+        }
+        else {
+            switch ($this->getDataType()) {
+                case 'bit':
+                    return $faker->boolean();
+                case 'int':
+                case 'bigint':
+                case 'decimal':
+                case 'tinyint':
+                    return $faker->numberBetween($this->getMinFromLength(), $this->getMaxFromLength());
+                case 'date':
+                    return $faker->date();
+                case 'timestamp':
+                    return $faker->dateTime();
+                case 'varchar':
+                case 'text':
+                case 'mediumtext':
+                case 'largetext':
+                    if ($this->getLength() <= 5) {
+                        return $faker->regexify('[A-Za-z]{' . $faker->numberBetween(0, $this->getLength()) . '}');
+                    }
+                    else {
+                        return $faker->text($faker->numberBetween(5, $this->getLength()));
+                    }
+                default:
+                    $this->invalidColumnType();
+            }
+        }
+    }
+
     public function addFilterToQuery($tableName, $query, $filters) {
         if (array_key_exists($this->name, $filters)) {
             $filter = $filters[$this->name];
@@ -267,6 +269,9 @@ class SimpleColumnInfos extends ColumnInfos {
                     if (array_key_exists('to_value', $filter)) {
                         $query->where($tableName . '.' . $filter['name'], '<=', $filter['to_value']);
                     }
+                    if (array_key_exists('values', $filter) && is_array($filter['values'])) {
+                        $query->whereIn($tableName . '.' . $filter['name'], $filter['values']);
+                    }
                     break;
                 case 'varchar':
                 case 'text':
@@ -280,6 +285,64 @@ class SimpleColumnInfos extends ColumnInfos {
                     $this->invalidColumnType();
             }
         }
+    }
+
+    public function isEmail() {
+        return $this->name == 'email';
+    }
+
+    public function isPhone() {
+        return $this->name == 'phone' || $this->name == 'telephone';
+    }
+
+    public function isUrl() {
+        return $this->name == 'url' || $this->name == 'link';
+    }
+
+    public function isCheckBox() {
+        return ($this->getDataType() == 'tinyint' && $this->getLength() == 1) || $this->getDataType() == 'bit';
+    }
+
+    public function isDatetime() {
+        return $this->getDataType() == 'timestamp';
+    }
+
+    public function getDataType() {
+        $dataType = explode(' ', $this->type)[0];
+        return explode('(', $dataType)[0];
+    }
+
+    public function getMinFromLength() {
+        if ($this->isUnsigned()) {
+            return 0;
+        }
+        else {
+            return -$this->getMaxFromLength();
+        }
+    }
+
+    public function getMaxFromLength() {
+        $length = $this->getLength();
+        if ($this->isUnsigned()) {
+            --$length;
+        }
+        $max = 1;
+        for ($i = 0; $i < $length; ++$i) {
+            $max *= 10;
+        }
+        return $max;
+    }
+
+    public function getLength() {
+        $length = explode('(', $this->type)[1];
+        $length = explode(',', $length)[0];
+        $length = explode(')', $length)[0];
+        $length = intval($length);
+        return $length;
+    }
+
+    public function isUnsigned() {
+        return str_contains($this->type, 'unsigned');
     }
 
     public function addOrderByToQuery($tableName, $query, $order = 'ASC') {

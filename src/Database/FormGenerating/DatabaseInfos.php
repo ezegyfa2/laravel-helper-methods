@@ -14,7 +14,7 @@ class DatabaseInfos {
     ];
 
     // In the filterName we can set what columns will be render in the current page (eg: index, edit etc.)
-    public static function getSpecificTableInfos(string $tableName, string $filterName = '-', array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
+    public static function getAdminTableInfos(string $tableName, string $filterName = '-', array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
         $tableInfos = static::getTableInfos($ignoredColumnNames)[$tableName];
         $renderColumnNames = static::getConfigGlobalFilterColumnNames($tableName);
         $renderColumnNames = array_merge($renderColumnNames, static::getConfigFilterColumnNames($tableName, $filterName));
@@ -125,16 +125,22 @@ class DatabaseInfos {
         }
     }
 
+    public static function getTableInfosByColumns(string $tableName, array $columnNames = [ 'id', 'created_at', 'updated_at' ]) {
+        $tableInfos = static::getTableInfos([])[$tableName];
+        $tableInfos->setColumnInfos($columnNames);
+        return $tableInfos;
+    }
+
     public static function getTableInfos(array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
         $tableInfos = static::getTableInfosWithoutRelations($ignoredColumnNames);
         $query = 'SELECT for_name, ref_name, for_col_name, ref_col_name '
-            . 'FROM INFORMATION_SCHEMA.INNODB_SYS_FOREIGN '
-            . 'INNER JOIN INFORMATION_SCHEMA.INNODB_SYS_FOREIGN_COLS '
-            . 'ON INNODB_SYS_FOREIGN.ID = INNODB_SYS_FOREIGN_COLS.ID';
+            . 'FROM INFORMATION_SCHEMA.INNODB_FOREIGN '
+            . 'INNER JOIN INFORMATION_SCHEMA.INNODB_FOREIGN_COLS '
+            . 'ON INNODB_FOREIGN.ID = INNODB_FOREIGN_COLS.ID';
         $rawRelationInfos = HelperTableMethods::select($query);
-        $rawRelationInfos = array_filter($rawRelationInfos, function($rawRelationInfo) {
+        $rawRelationInfos = array_filter($rawRelationInfos, function($rawRelationInfo) use($ignoredColumnNames) {
             $referenceTableNameParts = explode('/', $rawRelationInfo->ref_name);
-            if (count($referenceTableNameParts) > 0) {
+            if (count($referenceTableNameParts) > 0 && !in_array($rawRelationInfo->for_col_name, $ignoredColumnNames)) {
                 $referenceTableSchemaName = explode('/', $rawRelationInfo->ref_name)[0];
                 return $referenceTableSchemaName == DB::connection()->getDatabaseName();
             }
@@ -180,7 +186,7 @@ class DatabaseInfos {
     public static function getTableInfosWithoutRelations(array $ignoredColumnNames = [ 'id', 'created_at', 'updated_at' ]) {
         $query = 'SELECT table_name, column_name, column_type, is_nullable, column_default, character_maximum_length, numeric_precision '
             . 'FROM INFORMATION_SCHEMA.COLUMNS '
-            . 'WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '"'
+            . 'WHERE TABLE_SCHEMA = "' . \DB::connection()->getDatabaseName() . '" '
             . 'ORDER BY ordinal_position';
         $rawTableInfos = HelperTableMethods::select($query);
         $uniques = static::getUniques();

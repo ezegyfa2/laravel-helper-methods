@@ -104,11 +104,7 @@ class TableInfos {
 
     public function getDataResponse(int $rowToShowCount, int $selectedPageNumber, array $filters, $translationPrefix = '') {
         $columnNames = $this->getColumnNamesWithRelatedTableName();
-        $rows = $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
-        \Log::debug($rowToShowCount);
-        \Log::debug($filters);
-        \Log::debug($this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->toSql());
-        \Log::debug($this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray());
+        $rows = $this->getData($rowToShowCount, $selectedPageNumber, $filters);
         $totalRowCount = $this->getFilterDataQuery($filters)->count();
         return response()->json((object) [
             'total_row_count' => $totalRowCount,
@@ -116,6 +112,36 @@ class TableInfos {
             'rows' => $rows,
             'filter_sections' => $this->getFilterFormInfos($translationPrefix)
         ]);
+    }
+
+    public function getFullData(int $rowToShowCount, int $selectedPageNumber, array $filters) {
+        $columnNames = $this->getColumnNamesWithRelatedTableName();
+        return $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
+    }
+
+    public function getFullColumnNames() {
+        $columnNames = [];
+        foreach ($this->getRelationReplacedColumnInfos() as $columnInfos) {
+            if ($columnInfo instanceof RelationColumnInfos) {
+                //$relatedTableName 
+            }
+            else {
+                array_push($columnNames, $this->name . '.' . $columnInfo->name);
+            }
+        }
+        return array_values(array_map(function($columnInfo) {
+            
+        }, $this->getRelationReplacedColumnInfos()));
+    }
+
+    public function getRawData(?int $rowToShowCount = null, ?int $selectedPageNumber = null, array $filters = []) {
+        $columnNames = $this->getColumnNamesWithTableName();
+        return $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
+    }
+
+    public function getData(?int $rowToShowCount = null, ?int $selectedPageNumber = null, array $filters = []) {
+        $columnNames = $this->getColumnNamesWithRelatedTableName();
+        return $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
     }
 
     public function getColumnNamesWithRelatedTableName() {
@@ -135,13 +161,18 @@ class TableInfos {
         }, $this->columnInfos));
     }
 
-    public function getDataQuery(int $selectedPageNumber, int $rowToShowCount, array $columnNames, array $filters) {
-        return $this->getFilterDataQuery($filters)
+    public function getDataQuery(?int $selectedPageNumber, ?int $rowToShowCount, array $columnNames, array $filters) {
+        $query = $this->getFilterDataQuery($filters)
             ->select(array_map(function($columnName) {
                 return \DB::raw($columnName);
-            }, $columnNames))
-            ->limit($rowToShowCount)
-            ->offset(($selectedPageNumber - 1) * $rowToShowCount);
+            }, $columnNames));
+        if ($rowToShowCount) {
+            $query = $query->limit($rowToShowCount);
+            if ($selectedPageNumber) {
+                $query = $query->offset(($selectedPageNumber - 1) * $rowToShowCount);
+            }
+        }
+        return $query;
     }
 
     public function getFilterDataQuery(array $filters) {
@@ -206,5 +237,29 @@ class TableInfos {
 
     public function getNameInNormalFormat() {
         return str_replace('_', ' ', $this->name);
+    }
+
+    public function createFakeData(int $dataCount) {
+        for ($i = 0; $i < $dataCount; ++$i) {
+            $fakeData = array_map(function($columnInfos) {
+                return $columnInfos->getFakeValue();
+            }, $this->getRelationReplacedColumnInfos());
+            \DB::table($this->name)->insert($fakeData);
+        }
+    }
+
+    public function setColumnInfos(array $columnNames) {
+        $this->columnInfos = array_filter($this->columnInfos, function($columnInfo) use($columnNames) {
+            return in_array($columnInfo->name, $columnNames);
+        });
+        $this->relationInfos = array_filter($this->relationInfos, function($relationInfo) use($columnNames) {
+            return in_array($relationInfo->referenceColumnName, $columnNames);
+        });
+    }
+
+    public function getRelationColumnNames() {
+        return array_map(function ($relationInfo) {
+            return $relationInfo->referenceColumnName;
+        }, $this->relationInfos);
     }
 }
