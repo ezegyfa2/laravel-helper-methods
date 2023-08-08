@@ -80,7 +80,17 @@ class AuthenticationController extends Controller
     }
 
     public function registration(Request $request) {
-
+        $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'name', 'password' ]);
+        $formItemSections = $tableInfos->getFormInfos('auth');
+        array_push($formItemSections, (object) [
+            'type' => 'password-input',
+            'data' => (object) [
+                'name' => 'password_again',
+            ]
+        ]);
+        $templateParams = (object) [
+            'form_item_sections' => $formItemSections
+        ];
     }
 
     public function registrationPage() {
