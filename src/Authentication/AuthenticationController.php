@@ -4,6 +4,8 @@ namespace Ezegyfa\LaravelHelperMethods\Authentication;
 
 use Ezegyfa\LaravelHelperMethods\Database\FormGenerating\DatabaseInfos;
 use Ezegyfa\LaravelHelperMethods\DynamicTemplateMethods;
+use Ezegyfa\LaravelHelperMethods\HttpMethods;
+
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -11,6 +13,9 @@ use Illuminate\Support\Facades\Hash;
 use Session;
 use Auth;
 use Route;
+
+use Illuminate\Validation\Rules\Password;
+
    
 class AuthenticationController extends Controller
 {
@@ -23,6 +28,7 @@ class AuthenticationController extends Controller
         Route::get('/login', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@loginPage')->name('loginPage');
         Route::post('/login', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@login')->name('login');
         Route::get('/registration', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@registrationPage')->name('registrationPage');
+        Route::post('/registration', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@registration')->name('registration');
         Route::get('/logout', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@logout')->name('logout');
     }
 
@@ -80,12 +86,42 @@ class AuthenticationController extends Controller
     }
 
     public function registration(Request $request) {
+        try {
+            $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'name', 'email', 'password' ]);
+            $request->merge(HttpMethods::getCorrectedRequestData($request->all(), $tableInfos));
+            $validators = $tableInfos->getValidators();
+            $passwordRule = Password::min(8)
+                ->letters()
+                ->mixedCase()
+                ->numbers()
+                ->symbols()
+                ->uncompromised();
+            $validators['password'] = ['required', 'confirmed', $passwordRule];
 
+            $request->validate($validators);
+            $insertData = $tableInfos->filterData(request()->all());
+            $insertData['password'] = Hash::make($insertData['password']);
+            $user = User::create($insertData);
+            auth()->login($user);
+            return redirect('/')->with('success_message', 'Registration succefully');
+        }
+        catch (ValidationException $e) {
+            return redirect()->back()->withInput(request()->all())->withErrors($e->errors());
+        }
     }
 
     public function registrationPage() {
+        $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'name', 'password' ]);
+        $formItemSections = $tableInfos->getFormInfos('auth');
+        array_push($formItemSections, (object) [
+            'type' => 'text-input',
+            'data' => (object) [
+                'name' => 'password_confirmation',
+                'label' => 'Repeat password'
+            ]
+        ]);
         $templateParams = (object) [
-            'form_item_sections' => []
+            'form_item_sections' => $formItemSections
         ];
         return DynamicTemplateMethods::getTemplateDynamicPage('ecom_registration', $templateParams, 'app');
     }
