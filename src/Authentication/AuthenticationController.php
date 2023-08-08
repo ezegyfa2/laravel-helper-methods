@@ -94,6 +94,9 @@ class AuthenticationController extends Controller
     }
 
     public function registrationPage() {
-        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_registration', [], 'app');
+        $templateParams = (object) [
+            'form_item_sections' => []
+        ];
+        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_registration', $templateParams, 'app');
     }
 }
