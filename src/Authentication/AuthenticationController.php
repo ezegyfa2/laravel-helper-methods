@@ -5,31 +5,84 @@ namespace Ezegyfa\LaravelHelperMethods\Authentication;
 use Ezegyfa\LaravelHelperMethods\Database\FormGenerating\DatabaseInfos;
 use Ezegyfa\LaravelHelperMethods\DynamicTemplateMethods;
 use Ezegyfa\LaravelHelperMethods\HttpMethods;
+use Ezegyfa\LaravelHelperMethods\Authentication\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Session;
-use Auth;
-use Route;
-
 use Illuminate\Validation\Rules\Password;
 
+use Auth;
    
 class AuthenticationController extends Controller
 {
-    public function __construct()
+    public function __construct(Request $request)
     {
-        $this->middleware('guest')->except('logout');
     }
 
-    public static function registerRoutes() {
-        Route::get('/login', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@loginPage')->name('loginPage');
-        Route::post('/login', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@login')->name('login');
-        Route::get('/registration', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@registrationPage')->name('registrationPage');
-        Route::post('/registration', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@registration')->name('registration');
-        Route::get('/logout', 'Ezegyfa\LaravelHelperMethods\Authentication\AuthenticationController@logout')->name('logout');
+    public function adminDashboard(Request $request) {
+        // Admin::find(1)->user->name 
+        // Auth::user()->admin()->exists() admin-e?
+        // Auth::user()->admin()->permissions
+        #dd(Auth::user()->admin->permissions(), Admin::find(1)->permissions);
+        dd(Auth::guard('admin')->user(), Auth::guard('admin')->user()->user->id);
+        return;
+    }
+
+    public function adminLogin() {
+        if(Auth::guard('admin')->check()) {
+            return redirect()->route('adminDashboard');
+        }
+        $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ]);
+        $formItemSections = $tableInfos->getFormInfos('auth');
+        $templateParams = (object) [
+            'form_item_sections' => $formItemSections
+        ];
+        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_login', $templateParams, 'app');
+    }
+
+    public function adminLoginPost(Request $request) {
+        try {
+            $input = $request->all();
+            $validators = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ])->getValidators();
+            foreach($validators['email'] as $k => $v) {
+                if(strpos($v, 'unique') !== false) {
+                    unset($validators['email'][$k]);
+                }
+            }
+            $request->validate($validators);
+            $loginData = [
+                'email' => $input['email'],
+                'password' => $input['password']
+            ];
+
+            $user = User::where('email', $request->email)->first();
+            # $admin = Admin::where('user_id', $user->id) 
+            if($user && ($admin = $user->admin()->get()->toArray())) {
+                $password = $admin[0]['password'];
+                if( Hash::check($request->password, $password)) {
+                    Auth::guard('admin')->loginUsingId($user->id);
+                    return redirect()->route('adminDashboard');
+               }
+            }
+        }
+        catch (ValidationException $e) {
+            return redirect()->back()->withInput(request()->all())->withErrors($e->errors());
+        }
+        return redirect()->back()->withInput(request()->all())->withErrors([ 'password' => __('auth.password') ]);
+    }
+
+    public function logout(Request $request) {
+        if($request->is('admin/*')) {
+            Auth::shouldUse('admin');
+        }
+        if(Auth::check()) {
+            Auth::logout();
+            # $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+        return redirect('/');
     }
 
     public function login(Request $request)
@@ -77,14 +130,6 @@ class AuthenticationController extends Controller
         return DynamicTemplateMethods::getTemplateDynamicPage('ecom_login', $templateParams, 'app');
     }
 
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect('/');
-    }
-
     public function registration(Request $request) {
         try {
             $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'name', 'email', 'password' ]);
@@ -100,7 +145,7 @@ class AuthenticationController extends Controller
 
             $request->validate($validators);
             $insertData = $tableInfos->filterData(request()->all());
-            $insertData['password'] = Hash::make($insertData['password']);
+            #$insertData['password'] = Hash::make($insertData['password']);
             $user = User::create($insertData);
             auth()->login($user);
             return redirect('/')->with('success_message', 'Registration succefully');
