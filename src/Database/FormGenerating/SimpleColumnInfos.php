@@ -3,6 +3,7 @@
 namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
 use Illuminate\Support\Facades\Lang;
+use Illuminate\Validation\Rules\Password;
 use Faker\Factory;
 
 class SimpleColumnInfos extends ColumnInfos {
@@ -98,6 +99,14 @@ class SimpleColumnInfos extends ColumnInfos {
         }
         else if ($this->isPhone()) {
             $validator[] = 'regex:/([0-9]|\+){0,14}/';
+        }
+        else if ($this->isPassword()) {
+            $validator[] = Password::min(8)
+                ->letters()
+                ->mixedCase()
+                ->numbers()
+                ->symbols()
+                ->uncompromised();
         }
         return $validator;
     }
@@ -293,6 +302,10 @@ class SimpleColumnInfos extends ColumnInfos {
 
     public function isPhone() {
         return $this->name == 'phone' || $this->name == 'telephone';
+    }
+
+    public function isPassword() {
+        return $this->name == 'password';
     }
 
     public function isUrl() {

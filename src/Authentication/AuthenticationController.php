@@ -11,7 +11,7 @@ use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 use Auth;
    
@@ -46,11 +46,9 @@ class AuthenticationController extends Controller
         try {
             $input = $request->all();
             $validators = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ])->getValidators();
-            foreach($validators['email'] as $k => $v) {
-                if(strpos($v, 'unique') !== false) {
-                    unset($validators['email'][$k]);
-                }
-            }
+            $validators['email'] = array_filter(function($validator) {
+                return strpos($validator, 'unique') === false;
+            }, $validators['email']);
             $request->validate($validators);
             $loginData = [
                 'email' => $input['email'],
@@ -90,11 +88,9 @@ class AuthenticationController extends Controller
         try {
             $input = $request->all();
             $validators = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ])->getValidators();
-            foreach($validators['email'] as $k => $v) {
-                if(strpos($v, 'unique') !== false) {
-                    unset($validators['email'][$k]);
-                }
-            }
+            $validators['email'] = array_filter(function($validator) {
+                return strpos($validator, 'unique') === false;
+            }, $validators['email']);
             //array_push($validators, 'email in users');
             $request->validate($validators);
             $loginData = [
@@ -106,7 +102,7 @@ class AuthenticationController extends Controller
                 return redirect()->route('home');
             }
             else {
-                return redirect()->back()->withInput(request()->all())->withErrors([ 'password' => __('auth.password') ]);
+                throw ValidationException::withMessages([ 'password' => __('auth.password') ]);
             }
         }
         catch (ValidationException $e) {
@@ -135,13 +131,9 @@ class AuthenticationController extends Controller
             $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'name', 'email', 'password' ]);
             $request->merge(HttpMethods::getCorrectedRequestData($request->all(), $tableInfos));
             $validators = $tableInfos->getValidators();
-            $passwordRule = Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols()
-                ->uncompromised();
-            $validators['password'] = ['required', 'confirmed', $passwordRule];
+
+            $validators['password'][] = 'confirmed';
+            dd($validators);
 
             $request->validate($validators);
             $insertData = $tableInfos->filterData(request()->all());
