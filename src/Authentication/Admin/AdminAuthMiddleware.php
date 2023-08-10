@@ -1,5 +1,5 @@
 <?php
-namespace Ezegyfa\LaravelHelperMethods\Authentication;
+namespace Ezegyfa\LaravelHelperMethods\Authentication\Admin;
  
 use Closure;
 use Illuminate\Http\Request;
@@ -16,7 +16,7 @@ class AdminAuthMiddleware
         if ($request->ajax() || $request->wantsJson()) {
             return response(['error' => 'Unauthorized.'], 401);
         } else {
-            return redirect(route('adminLogin'));
+            return redirect(route('admin.login'));
         }
     }
 }

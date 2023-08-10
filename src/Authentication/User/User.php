@@ -1,6 +1,8 @@
 <?php
 
-namespace Ezegyfa\LaravelHelperMethods\Authentication;
+namespace Ezegyfa\LaravelHelperMethods\Authentication\User;
+
+use Illuminate\Support\Facades\Hash;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,7 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-use Hash;
+use Ezegyfa\LaravelHelperMethods\Authentication\Admin\Admin;
 
 class User extends Authenticatable
 {

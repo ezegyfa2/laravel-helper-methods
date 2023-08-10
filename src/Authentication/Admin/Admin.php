@@ -1,9 +1,11 @@
 <?php
 
-namespace Ezegyfa\LaravelHelperMethods\Authentication;
+namespace Ezegyfa\LaravelHelperMethods\Authentication\Admin;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+
+use Ezegyfa\LaravelHelperMethods\Authentication\User\User;
 
 class Admin extends Authenticatable
 {
@@ -13,9 +15,5 @@ class Admin extends Authenticatable
 
     public function user() {
         return $this->belongsTo(User::class);
-    }
-
-    public function permissions() {
-        return $this->hasMany(Permissions::class);
     }
 }
