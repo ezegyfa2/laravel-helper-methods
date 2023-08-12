@@ -22,6 +22,7 @@ class UserAuthenticationController extends Controller
         try {
             $input = $request->all();
             $validators = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ])->getValidators();
+            $validators['password'] = 'required';
             $validators['email'] = array_filter($validators['email'], function($validator) {
                 return strpos($validator, 'unique') === false;
             });

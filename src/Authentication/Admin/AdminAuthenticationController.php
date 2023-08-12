@@ -14,22 +14,31 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
 class AdminAuthenticationController extends Controller 
 {
     public function __construct() {}
 
     public function dashboard(Request $request) {
-        // Admin::find(1)->user->name 
-        // Auth::user()->admin()->exists() admin-e?
-        // Auth::user()->admin()->permissions
-        dd(Auth::guard('admin')->user(), Auth::guard('admin')->user()->user->id);
-        return;
+        // $permission = Permission::create(['guard_name' => 'web', 'name' => 'publish articles']);
+        // $role = Role::create(['name' => 'MainAdmin', 'guard_name' => 'admin']);
+        // $role = Role::findByName('MainAdmin', 'admin');
+        // $role->givePermissionTo('edit articles');
+        // $role->givePermissionTo('create users');
+
+        // $admin = Auth::guard('admin')->user();
+        // $admin->assignRole(['MainAdmin', 'Admin']);
+        // dd($admin->getAllPermissions());
+        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_admin', [], 'app');
     }
 
     public function login(Request $request) {
         try {
             $input = $request->all();
             $validators = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ])->getValidators();
+            $validators['password'] = 'required';
             $validators['email'] = array_filter($validators['email'], function($validator) {
                 return strpos($validator, 'unique') === false;
             });
@@ -46,7 +55,7 @@ class AdminAuthenticationController extends Controller
                     $password = $admin->password;
                     if( Hash::check($request->password, $password)) {
                         Auth::guard('admin')->loginUsingId($user->id);
-                        return redirect()->route('dashboard');
+                        return redirect()->route('admin.dashboard');
                    }
                    else {
                         throw ValidationException::withMessages([ 'password' => __('auth.password') ]);
@@ -68,7 +77,7 @@ class AdminAuthenticationController extends Controller
 
     public function loginPage() {
         if(Auth::guard('admin')->check()) {
-            return redirect()->route('dashboard');
+            return redirect()->route('admin.dashboard');
         }
         $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ]);
         $formItemSections = $tableInfos->getFormInfos('auth');
@@ -84,6 +93,6 @@ class AdminAuthenticationController extends Controller
             Auth::logout();
             $request->session()->regenerateToken();
         }
-        return redirect('/');
+        return redirect()->route('admin.loginPage');
     }
 }

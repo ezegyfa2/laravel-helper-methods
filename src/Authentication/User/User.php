@@ -11,10 +11,12 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 use Ezegyfa\LaravelHelperMethods\Authentication\Admin\Admin;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    protected $guard_name = 'admin';
 
     protected $fillable = [
         'name',
