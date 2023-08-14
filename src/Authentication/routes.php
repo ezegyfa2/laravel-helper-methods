@@ -13,7 +13,7 @@ Route::group(['controller' => 'Admin\AdminAuthenticationController', 'prefix' =>
     Route::post('/login', 'login')->name('login');
 
     Route::middleware('adminAuth')->group(function () {
-        Route::get('/', 'dashboard')->name('dashboard');
+        Route::get('/', 'dashboard')->name('dashboard');//->middleware(['role:MainAdmin,admin']);
     });
 
     Route::get('/logout', 'logout')->name('logout');

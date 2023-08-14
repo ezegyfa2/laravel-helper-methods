@@ -22,7 +22,7 @@ class UserAuthenticationController extends Controller
         try {
             $input = $request->all();
             $validators = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ])->getValidators();
-            $validators['password'] = 'required';
+            // $validators['password'] = 'required';
             $validators['email'] = array_filter($validators['email'], function($validator) {
                 return strpos($validator, 'unique') === false;
             });
@@ -96,7 +96,7 @@ class UserAuthenticationController extends Controller
     }
 
     public function logout(Request $request) {
-        if(Auth::check()) {
+        if (Auth::check()) {
             Auth::logout();
             # $request->session()->invalidate();
             $request->session()->regenerateToken();

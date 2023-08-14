@@ -38,7 +38,7 @@ class AdminAuthenticationController extends Controller
         try {
             $input = $request->all();
             $validators = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ])->getValidators();
-            $validators['password'] = 'required';
+            //$validators['password'] = 'required';
             $validators['email'] = array_filter($validators['email'], function($validator) {
                 return strpos($validator, 'unique') === false;
             });
@@ -49,48 +49,44 @@ class AdminAuthenticationController extends Controller
             ];
 
             $user = User::where('email', $request->email)->first();
-            if($user) {
-                if($user->admin()->exists()) {
-                    $admin = $user->admin;
-                    $password = $admin->password;
-                    if( Hash::check($request->password, $password)) {
-                        Auth::guard('admin')->loginUsingId($user->id);
-                        return redirect()->route('admin.dashboard');
-                   }
-                   else {
-                        throw ValidationException::withMessages([ 'password' => __('auth.password') ]);
-                   }
+            if ($user && $user->admin()->exists()) {
+                $admin = $user->admin;
+                $password = $admin->password;
+                if (Hash::check($request->password, $password)) {
+                    Auth::guard('admin')->loginUsingId($user->id);
+                    return redirect()->route('admin.dashboard');
                 }
                 else {
-                    throw ValidationException::withMessages([ 'email' => __('auth.email') ]);
+                    throw ValidationException::withMessages([ 'password' => __('auth.password') ]);
                 }
             }
-            else{
+            else {
                 throw ValidationException::withMessages([ 'email' => __('auth.email') ]);
             }
         }
         catch (ValidationException $e) {
             return redirect()->back()->withInput(request()->all())->withErrors($e->errors());
         }
-        return redirect()->back()->withInput(request()->all())->withErrors([ 'password' => __('auth.password') ]);
     }
 
     public function loginPage() {
-        if(Auth::guard('admin')->check()) {
+        if (!Auth::guard('admin')->check()) {
+            $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ]);
+            $formItemSections = $tableInfos->getFormInfos('auth');
+            $templateParams = (object) [
+                'form_item_sections' => $formItemSections
+            ];
+            return DynamicTemplateMethods::getTemplateDynamicPage('ecom_login', $templateParams, 'app');
+        }
+        else { 
             return redirect()->route('admin.dashboard');
         }
-        $tableInfos = DatabaseInfos::getTableInfosByColumns('users', [ 'email', 'password' ]);
-        $formItemSections = $tableInfos->getFormInfos('auth');
-        $templateParams = (object) [
-            'form_item_sections' => $formItemSections
-        ];
-        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_login', $templateParams, 'app');
     }
 
     public function logout(Request $request) {
-        Auth::shouldUse('admin');
-        if(Auth::check()) {
-            Auth::logout();
+        $admin = Auth::guard('admin');
+        if ($admin->check()) {
+            $admin->logout();
             $request->session()->regenerateToken();
         }
         return redirect()->route('admin.loginPage');

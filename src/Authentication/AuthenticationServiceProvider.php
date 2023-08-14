@@ -4,7 +4,7 @@ namespace Ezegyfa\LaravelHelperMethods\Authentication;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 
-class AuthServiceProvider extends ServiceProvider
+class AuthenticationServiceProvider extends ServiceProvider
 {
     public function register() {}
 
@@ -22,7 +22,7 @@ class AuthServiceProvider extends ServiceProvider
 
     public function registerMiddlewares() {
         $router = $this->app['router'];
-        $router->aliasMiddleware('adminAuth', __NAMESPACE__ . '\Admin\AdminAuthMiddleware');
+        $router->aliasMiddleware('adminAuth', __NAMESPACE__ . '\Admin\AdminAuthenticationMiddleware');
         $spaieMiddlewares = [
             'role' => 'RoleMiddleware',
             'permission' => 'PermissionMiddleware',
