@@ -1,4 +1,5 @@
 <?php
+
 Route::group(['middleware' => 'guest', 'controller' => 'User\UserAuthenticationController'], function() {
     Route::get('/login', 'loginPage')->name('loginPage');
     Route::post('/login', 'login')->name('login');

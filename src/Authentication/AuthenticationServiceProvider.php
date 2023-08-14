@@ -1,4 +1,5 @@
 <?php
+
 namespace Ezegyfa\LaravelHelperMethods\Authentication;
 
 use Illuminate\Support\ServiceProvider;
@@ -28,7 +29,7 @@ class AuthenticationServiceProvider extends ServiceProvider
             'permission' => 'PermissionMiddleware',
             'role_or_permission' => 'RoleOrPermissionMiddleware',
         ];
-        foreach($spaieMiddlewares as $alias => $className) {
+        foreach ($spaieMiddlewares as $alias => $className) {
             $router->aliasMiddleware($alias, '\Spatie\Permission\Middlewares\\' . $className);
         }
     }

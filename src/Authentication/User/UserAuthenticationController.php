@@ -17,7 +17,6 @@ class UserAuthenticationController extends Controller
 {
     public function __construct() {}
 
-
     public function login(Request $request) {
         try {
             $input = $request->all();

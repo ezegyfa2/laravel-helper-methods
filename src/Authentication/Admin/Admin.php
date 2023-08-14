@@ -11,8 +11,8 @@ use Spatie\Permission\Traits\HasRoles;
 class Admin extends Authenticatable
 {
     use HasFactory, HasRoles;
-    protected $guard_name = 'admin';
 
+    protected $guard_name = 'admin';
     public $timestamps = false;
 
     public function user() {

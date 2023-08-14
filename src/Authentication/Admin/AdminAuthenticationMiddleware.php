@@ -13,7 +13,7 @@ class AdminAuthenticationMiddleware
             return $next($request);
         }
         else if ($request->ajax() || $request->wantsJson()) {
-            return response(['error' => 'Unauthorized.'], 401);
+            return response(['error' => __('auth.unauthorized')], 401);
         }
         else {
             return redirect(route('admin.login'));
