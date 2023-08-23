@@ -1,6 +1,6 @@
 <?php
 
-Route::group(['middleware' => 'guest', 'controller' => 'User\UserAuthenticationController'], function() {
+Route::group([ 'middleware' => 'guest', 'controller' => config('auth.loginControllerPath') ], function() {
     Route::get('/login', 'loginPage')->name('loginPage');
     Route::post('/login', 'login')->name('login');
     Route::get('/registration', 'registrationPage')->name('registrationPage');
@@ -9,7 +9,7 @@ Route::group(['middleware' => 'guest', 'controller' => 'User\UserAuthenticationC
 
 Route::get('/logout', 'User\UserAuthenticationController@logout')->name('logout');
 
-Route::group(['controller' => 'Admin\AdminAuthenticationController', 'prefix' => 'admin', 'as' => 'admin.'], function() {
+Route::group([ 'controller' => config('auth.adminLoginControllerPath'), 'prefix' => 'admin', 'as' => 'admin.' ], function() {
     Route::get('/login', 'loginPage')->name('loginPage');
     Route::post('/login', 'login')->name('login');
 

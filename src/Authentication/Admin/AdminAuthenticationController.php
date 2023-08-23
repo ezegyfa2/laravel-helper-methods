@@ -31,7 +31,7 @@ class AdminAuthenticationController extends Controller
         // $admin = Auth::guard('admin')->user();
         // $admin->assignRole(['MainAdmin', 'Admin']);
         // dd($admin->getAllPermissions());
-        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_admin', [], 'app');
+        return DynamicTemplateMethods::getTemplateDynamicPage($this->dashboardPageTemplateName, [], 'app');
     }
 
     public function login(Request $request) {
@@ -76,7 +76,7 @@ class AdminAuthenticationController extends Controller
             $templateParams = (object) [
                 'form_item_sections' => $formItemSections
             ];
-            return DynamicTemplateMethods::getTemplateDynamicPage('ecom_login', $templateParams, 'app');
+            return DynamicTemplateMethods::getTemplateDynamicPage($this->loginPageTemplateName, $templateParams, 'app');
         }
         else { 
             return redirect()->route('admin.dashboard');

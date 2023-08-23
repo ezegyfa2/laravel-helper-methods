@@ -56,7 +56,7 @@ class UserAuthenticationController extends Controller
         $templateParams = (object) [
             'form_item_sections' => $formItemSections
         ];
-        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_login', $templateParams, 'app');
+        return DynamicTemplateMethods::getTemplateDynamicPage($this->loginPageTemplateName, $templateParams);
     }
 
     public function registration(Request $request) {
@@ -91,7 +91,7 @@ class UserAuthenticationController extends Controller
         $templateParams = (object) [
             'form_item_sections' => $formItemSections
         ];
-        return DynamicTemplateMethods::getTemplateDynamicPage('ecom_registration', $templateParams, 'app');
+        return DynamicTemplateMethods::getTemplateDynamicPage($this->loginPageTemplateName, $templateParams);
     }
 
     public function logout(Request $request) {
