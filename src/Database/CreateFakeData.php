@@ -1,6 +1,6 @@
 <?php
 
-namespace Ezegyfa\LaravelHelperMethods;
+namespace Ezegyfa\LaravelHelperMethods\Database;
 
 use Illuminate\Console\Command;
 use Ezegyfa\LaravelHelperMethods\Database\FormGenerating\DatabaseInfos;

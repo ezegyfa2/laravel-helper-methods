@@ -198,6 +198,7 @@ class DatabaseInfos {
             if (!in_array($rawTableInfo->column_name, $ignoredColumnNames)) {
                 $tableInfos[$rawTableInfo->table_name]->columnInfos[$rawTableInfo->column_name] =
                     new SimpleColumnInfos(
+                        $rawTableInfo->table_name,
                         $rawTableInfo->column_name,
                         static::getColumnType($rawTableInfo),
                         $rawTableInfo->is_nullable,

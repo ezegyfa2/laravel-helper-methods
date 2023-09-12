@@ -12,8 +12,6 @@ class WebshopController extends Controller
 
     public function getBasicData() {
         $tableInfos = DatabaseInfos::getTableInfos()[$this->tableName];
-        $selectedRowToShowCount = intval(request()->get('row-count', 10));
-        $selectedPageNumber = intval(request()->get('page-number', 1));
-        return $tableInfos->getRawData($selectedRowToShowCount, $selectedPageNumber, []);
+        return $tableInfos->getRequestDataResponse('products');
     }
 }

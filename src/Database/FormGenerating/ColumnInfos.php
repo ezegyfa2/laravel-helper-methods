@@ -6,13 +6,15 @@ use Ezegyfa\LaravelHelperMethods\HttpMethods;
 use Illuminate\Support\Facades\Session;
 
 class ColumnInfos {
+    public $tableName;
     public $name;
     public $type;
     public $isNull;
     public $default;
     public $validationErrors;
 
-    public function __construct($name, $type, $isNull, $default = null, $validationErrors = []) {
+    public function __construct($tableName, $name, $type, $isNull, $default = null, $validationErrors = []) {
+        $this->tableName = $tableName;
         $this->name = $name;
         $this->type = $type;
         $this->isNull = static::convertIsNull($isNull);
@@ -106,7 +108,7 @@ class ColumnInfos {
             return false;
         }
         else {
-            throw new \Exception('Unexpected database value for isNull');
+            throw new \Exception('Unexpected database value for isNull: ' . $isNull);
         }
     }
 }

@@ -2,19 +2,15 @@
 
 namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
+use Ezegyfa\LaravelHelperMethods\Database\HelperMethods;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Validation\Rules\Password;
 use Faker\Factory;
 
 class SimpleColumnInfos extends ColumnInfos {
-    public $name;
-    public $type;
-    public $isNull;
-    public $default;
-    public $validationErrors;
 
-    public function __construct($name, $type, $isNull, $default = null, $validationErrors = []) {
-        parent::__construct($name, $type, $isNull, $default, $validationErrors);
+    public function __construct($tableName, $name, $type, $isNull, $default = null, $validationErrors = []) {
+        parent::__construct($tableName, $name, $type, $isNull, $default, $validationErrors);
     }
 
     public function getFormInfos(string $translationPrefix = '', $withOldValues = null, $value = null) {
@@ -44,12 +40,13 @@ class SimpleColumnInfos extends ColumnInfos {
                         'type' => 'checkbox-input',
                         'data' => $formInfos,
                     ];
+                case 'tinyint':
+                case 'smallint':
+                case 'mediumint':
                 case 'int':
                 case 'bigint':
-                case 'decimal':
-                case 'tinyint':
-                    $formInfos->max = $this->getMaxFromLength();
-                    $formInfos->min = $this->getMinFromLength();
+                    $formInfos->max = $this->getMax();
+                    $formInfos->min = $this->getMin();
                     return (object) [
                         'type' => 'number-input',
                         'data' => $this->setFormInfosWithPlaceholder($formInfos, $translationPrefix),
@@ -122,14 +119,15 @@ class SimpleColumnInfos extends ColumnInfos {
                 return array_merge($validator, [
                     'boolean',
                 ]);
+            case 'tinyint':
+            case 'smallint':
+            case 'mediumint':
             case 'int':
             case 'bigint':
-            case 'decimal':
-            case 'tinyint':
                 return array_merge($validator, [
                     'int',
-                    'max:' . $this->getMaxFromLength(),
-                    'min:' . $this->getMinFromLength(),
+                    'max:' . $this->getMax(),
+                    'min:' . $this->getMin(),
                 ]);
             case 'varchar':
                 return array_merge($validator, [
@@ -156,16 +154,23 @@ class SimpleColumnInfos extends ColumnInfos {
                     'type' => 'checkbox-input',
                     'data' => $this->getFilterFormInfosWithValue($translationPrefix),
                 ];
+            case 'tinyint':
+            case 'smallint':
+            case 'mediumint':
             case 'int':
             case 'bigint':
-            case 'decimal':
-            case 'tinyint':
                 $filterFormInfos = $this->getFilterFormInfosWithFromToValue($translationPrefix);
                 if (isset($filterFormInfos->from_value)) {
                     $filterFormInfos->from_value = (int)$filterFormInfos->from_value;
                 }
+                else {
+                    $filterFormInfos->from_value = 0;
+                }
                 if (isset($filterFormInfos->to_value)) {
                     $filterFormInfos->to_value = (int)$filterFormInfos->to_value;
+                }
+                else {
+                    $filterFormInfos->to_value = $this->getMaxValue();
                 }
                 return (object) [
                     'type' => 'number-input',
@@ -224,11 +229,13 @@ class SimpleColumnInfos extends ColumnInfos {
             switch ($this->getDataType()) {
                 case 'bit':
                     return $faker->boolean();
+                case 'tinyint':
+                case 'smallint':
+                case 'mediumint':
                 case 'int':
                 case 'bigint':
                 case 'decimal':
-                case 'tinyint':
-                    return $faker->numberBetween($this->getMinFromLength(), $this->getMaxFromLength());
+                    return $faker->numberBetween($this->getMin(), $this->getMax());
                 case 'date':
                     return $faker->date();
                 case 'timestamp':
@@ -240,8 +247,11 @@ class SimpleColumnInfos extends ColumnInfos {
                     if ($this->getLength() <= 5) {
                         return $faker->regexify('[A-Za-z]{' . $faker->numberBetween(0, $this->getLength()) . '}');
                     }
-                    else {
+                    else if ($this->getLength() < 3000) {
                         return $faker->text($faker->numberBetween(5, $this->getLength()));
+                    }
+                    else {
+                        return $faker->text($faker->numberBetween(5, 3000));
                     }
                 default:
                     $this->invalidColumnType();
@@ -249,51 +259,54 @@ class SimpleColumnInfos extends ColumnInfos {
         }
     }
 
-    public function addFilterToQuery($tableName, $query, $filters) {
-        if (array_key_exists($this->name, $filters)) {
-            $filter = $filters[$this->name];
-            switch ($this->getDataType()) {
-                case 'bit':
-                    if (array_key_exists('value', $filter)) {
-                        if ($filter['value'] == 'on') {
-                            $query->where($tableName . '.' . $this->name, 'TRUE');
-                        }
-                        else if ($filter['value'] == 'off') {
-                            $query->where($tableName . '.' . $this->name, 'FALSE');
-                        }
-                        else {
-                            throw new \Exception('Invalid checkbox value for column ' . $this->name);
-                        }
+    public function addFilterToQuery($query, $filter) {
+        switch ($this->getDataType()) {
+            case 'bit':
+                if (array_key_exists('value', $filter)) {
+                    if ($filter['value'] == 'on') {
+                        $query->where($this->tableName . '.' . $this->name, 'TRUE');
                     }
-                    break;
-                case 'int':
-                case 'bigint':
-                case 'decimal':
-                case 'tinyint':
-                case 'date':
-                case 'timestamp':
-                    if (array_key_exists('from_value', $filter)) {
-                        $query->where($tableName . '.' . $filter['name'], '>=', $filter['from_value']);
+                    else if ($filter['value'] == 'off') {
+                        $query->where($this->tableName . '.' . $this->name, 'FALSE');
                     }
-                    if (array_key_exists('to_value', $filter)) {
-                        $query->where($tableName . '.' . $filter['name'], '<=', $filter['to_value']);
+                    else {
+                        throw new \Exception('Invalid checkbox value for column ' . $this->name);
                     }
-                    if (array_key_exists('values', $filter) && is_array($filter['values'])) {
-                        $query->whereIn($tableName . '.' . $filter['name'], $filter['values']);
-                    }
-                    break;
-                case 'varchar':
-                case 'text':
-                case 'mediumtext':
-                case 'largetext':
-                    if (array_key_exists('value', $filter)) {
-                        $query->where($tableName . '.' . $filter['name'], 'LIKE', '%' . $filter['value'] . '%');
-                    }
-                    break;
-                default:
-                    $this->invalidColumnType();
-            }
+                }
+                break;
+            case 'tinyint':
+            case 'smallint':
+            case 'mediumint':
+            case 'int':
+            case 'bigint':
+            case 'decimal':
+            case 'date':
+            case 'timestamp':
+                if (array_key_exists('from_value', $filter)) {
+                    $query->where($this->tableName . '.' . $filter['name'], '>=', $filter['from_value']);
+                }
+                if (array_key_exists('to_value', $filter)) {
+                    $query->where($this->tableName . '.' . $filter['name'], '<=', $filter['to_value']);
+                }
+                if (array_key_exists('values', $filter) && is_array($filter['values'])) {
+                    $query->whereIn($this->tableName . '.' . $filter['name'], $filter['values']);
+                }
+                break;
+            case 'varchar':
+            case 'text':
+            case 'mediumtext':
+            case 'largetext':
+                if (array_key_exists('value', $filter)) {
+                    $query->where($this->tableName . '.' . $filter['name'], 'LIKE', '%' . $filter['value'] . '%');
+                }
+                break;
+            default:
+                $this->invalidColumnType();
         }
+    }
+
+    public function addOrderByToQuery($query, $order = 'ASC') {
+        $query->orderBy($this->getColumnNameWithTableName(), $order);
     }
 
     public function isEmail() {
@@ -325,12 +338,102 @@ class SimpleColumnInfos extends ColumnInfos {
         return explode('(', $dataType)[0];
     }
 
+    public function getSelect() {
+        switch ($this->getDataType()) {
+            case 'varchar':
+            case 'text':
+            case 'mediumtext':
+            case 'largetext':
+                return HelperMethods::getShortStringQuery($this->tableName . '.' . $this->name) . ' as ' . $this->name;
+            default:
+                return $this->tableName . '.' . $this->name;
+        }
+    }
+
+    public function getMax() {
+        switch ($this->getDataType()) {
+            case 'bigint': // 8 bite
+                if ($this->isUnsigned()) {
+                    return 18446744073709600000;
+                }
+                else {
+                    return 9223372036854780000;
+                }
+            case 'int': // 4 bite
+                if ($this->isUnsigned()) {
+                    return 4294967295; 
+                }
+                else {
+                    return 2147483647;
+                }
+            case 'mediumint': // 3 bite
+                if ($this->isUnsigned()) {
+                    return 16777216; 
+                }
+                else {
+                    return 8388608;
+                }
+            case 'smallint': // 2 bite
+                if ($this->isUnsigned()) {
+                    return 65536; 
+                }
+                else {
+                    return 32768;
+                }
+            case 'tinyint': // 1 bite
+                if ($this->isUnsigned()) {
+                    return 256; 
+                }
+                else {
+                    return 128;
+                }
+            case 'decimal':
+                return $this->getMaxFromLength();
+        }
+    }
+
+    public function getMin() {
+        if ($this->isUnsigned()) {
+            return 0;
+        }
+        else {
+            switch ($this->getDataType()) {
+                case 'bigint': // 8 bite
+                    return -9223372036854780000;
+                case 'int': // 4 bite
+                    return -2147483647;
+                case 'mediumint': // 3 bite
+                    return -8388608;
+                case 'smallint': // 2 bite
+                    return -32768;
+                case 'tinyint': // 1 bite
+                    return -128;
+                case 'decimal':
+                    return 0;
+                default:
+                    throw new \Exception('Can\'t get min for type ' . $this->getDataType());
+            }
+        }
+    }
+
     public function getMinFromLength() {
         if ($this->isUnsigned()) {
             return 0;
         }
         else {
             return -$this->getMaxFromLength();
+        }
+    }
+
+    public function getMaxValue() {
+        $columnName = $this->name;
+        $result = \DB::table($this->tableName)->select(\DB::raw('max(' . $columnName . ') AS ' . $columnName))->get();
+        $result = $result[0]->$columnName;
+        if ($result) {
+            return $result;
+        }
+        else {
+            return 0;
         }
     }
 
@@ -358,12 +461,8 @@ class SimpleColumnInfos extends ColumnInfos {
         return str_contains($this->type, 'unsigned');
     }
 
-    public function addOrderByToQuery($tableName, $query, $order = 'ASC') {
-        $query->orderBy();
-    }
-
-    public function getColumnNameWithTableName($tableName) {
-        return $tableName . '.' . $this->name;
+    public function getColumnNameWithTableName() {
+        return $this->tableName . '.' . $this->name;
     }
 
     protected function invalidColumnType() {

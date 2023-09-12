@@ -6,7 +6,6 @@ use Ezegyfa\LaravelHelperMethods\StringMethods;
 use Ezegyfa\LaravelHelperMethods\Database\HelperTableMethods;
 use Ezegyfa\LaravelHelperMethods\Database\HelperMethods;
 
-
 class RelationColumnInfos extends ColumnInfos {
     public $referencedTableInfos;
     public $tableInfos;
@@ -15,6 +14,7 @@ class RelationColumnInfos extends ColumnInfos {
 
     public function __construct($referencedTableInfos, $tableInfos, $referenceColumnName, $optionCreator = null) {
         parent::__construct(
+            $tableInfos->name,
             $referenceColumnName,
             $tableInfos->columnInfos[$referenceColumnName]->type,
             $tableInfos->columnInfos[$referenceColumnName]->isNull,
@@ -91,7 +91,6 @@ class RelationColumnInfos extends ColumnInfos {
                 }, $rows);
             }
         }
-        
     }
 
     public function getRenderValues(int $selectedPageNumber, int $rowToShowCount) {
@@ -112,8 +111,16 @@ class RelationColumnInfos extends ColumnInfos {
             ->leftJoin($this->getReferenceTableName(), $this->tableInfos->name . '.' . $this->referenceColumnName, $this->getReferenceTableName() . '.id');
     }
 
+    public function getSelect() {
+        return HelperMethods::getShortStringQuery($this->getRawRenderSelect()) . ' AS ' . $this->referenceColumnName;
+    }
+
     public function getRenderSelect() {
-        return 'CONCAT(' . StringMethods::concatenateStrings($this->getRenderColumnNamesWithTableName($this->getReferenceTableName()), ', " - ", ') . ') AS ' . $this->referenceColumnName;
+        return $this->getRawRenderSelect() . ' AS ' . $this->referenceColumnName;
+    }
+
+    public function getRawRenderSelect() {
+        return 'CONCAT(' . StringMethods::concatenateStrings($this->getRenderColumnNamesWithTableName($this->getReferenceTableName()), ', " - ", ') . ')';
     }
 
     public function getRenderColumnNamesWithTableName(string $tableName) {
@@ -182,11 +189,11 @@ class RelationColumnInfos extends ColumnInfos {
         return HelperMethods::getRandomId($this->getReferenceTableName());
     }
 
-    public function addFilterToQuery($tableName, $query, $filters) {
+    public function addFilterToQuery($query, $filters) {
         if (array_key_exists($this->name, $filters) && array_key_exists('value', $filters[$this->name])) {
             $filter = $filters[$this->name]['value'];
             if ($filter != 'no_filter') {
-                $query->where($tableName . '.' . $filters[$this->name]['name'], $filters[$this->name]['value']);
+                $query->where($this->tableName . '.' . $filters[$this->name]['name'], $filters[$this->name]['value']);
             }
         }
     }

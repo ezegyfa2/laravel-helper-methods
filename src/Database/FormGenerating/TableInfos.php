@@ -3,6 +3,7 @@
 namespace Ezegyfa\LaravelHelperMethods\Database\FormGenerating;
 
 use Ezegyfa\LaravelHelperMethods\HttpMethods;
+use Ezegyfa\LaravelHelperMethods\Database\HelperMethods as DatabaseHelperMethods;
 
 class TableInfos {
     public $name;
@@ -102,10 +103,23 @@ class TableInfos {
         }, $this->columnInfos));
     }
 
-    public function getDataResponse(int $rowToShowCount, int $selectedPageNumber, array $filters, $translationPrefix = '') {
+    public function getRequestDataResponse($translationPrefix = '') {
+        //dd(request()->get('order-data', []));
+        return $this->getDataResponse(
+            intval(request()->get('row-count', 10)),
+            intval(request()->get('page-number', 1)),
+            request()->get('filter-data', []),
+            request()->get('order-data', []),
+            $translationPrefix
+        );
+    }
+
+    public function getDataResponse(int $rowToShowCount, int $selectedPageNumber, array $filters = [], array $orders = [], $translationPrefix = '') {
         $columnNames = $this->getColumnNamesWithRelatedTableName();
-        $rows = $this->getData($rowToShowCount, $selectedPageNumber, $filters);
-        $totalRowCount = $this->getFilterDataQuery($filters)->count();
+        $rows = $this->getData($rowToShowCount, $selectedPageNumber, $filters, $orders);
+        $query = \DB::table($this->name);
+        $this->addFiltersToQuery($query, $filters);
+        $totalRowCount = $query->count();
         return response()->json((object) [
             'total_row_count' => $totalRowCount,
             'column_names' => $columnNames,
@@ -139,51 +153,56 @@ class TableInfos {
         return $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
     }
 
-    public function getData(?int $rowToShowCount = null, ?int $selectedPageNumber = null, array $filters = []) {
-        $columnNames = $this->getColumnNamesWithRelatedTableName();
-        return $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnNames, $filters)->get()->toArray();
+    public function getData(?int $rowToShowCount = null, ?int $selectedPageNumber = null, array $filters = [], array $orders = []) {
+        $columnSelects = $this->getColumnWithRelatedTableNameSelects();
+        return $this->getDataQuery($selectedPageNumber, $rowToShowCount, $columnSelects, $filters, $orders)->get()->toArray();
     }
 
-    public function getColumnNamesWithRelatedTableName() {
+    public function getColumnWithRelatedTableNameSelects() {
         return array_values(array_map(function($columnInfo) {
-            if ($columnInfo instanceof RelationColumnInfos) {
-                return $columnInfo->getRenderSelect();
-            }
-            else {
-                return $this->name . '.' . $columnInfo->name;
-            }
+            return $columnInfo->getSelect();
         }, $this->getRelationReplacedColumnInfos()));
     }
 
-    public function getColumnNamesWithTableName() {
-        return array_values(array_map(function($columnInfo) {
-            return $this->name . '.' . $columnInfo->name;
-        }, $this->columnInfos));
-    }
-
-    public function getDataQuery(?int $selectedPageNumber, ?int $rowToShowCount, array $columnNames, array $filters) {
-        $query = $this->getFilterDataQuery($filters)
-            ->select(array_map(function($columnName) {
-                return \DB::raw($columnName);
-            }, $columnNames));
+    public function getDataQuery(?int $selectedPageNumber, ?int $rowToShowCount, array $columnSelects, array $filters = [], array $orders = []) {
+        $query = \DB::table($this->name);
+        $this->addFiltersToQuery($query, $filters);
+        $this->addOrdersToQuery($query, $orders);
+        $this->addSelectsToQuery($query, $columnSelects);
         if ($rowToShowCount) {
             $query = $query->limit($rowToShowCount);
             if ($selectedPageNumber) {
                 $query = $query->offset(($selectedPageNumber - 1) * $rowToShowCount);
             }
         }
+        //dd(DatabaseHelperMethods::getSql($query));
         return $query;
     }
 
-    public function getFilterDataQuery(array $filters) {
-        $query = \DB::table($this->name);
+    public function addFiltersToQuery($query, array $filters) {
         foreach ($this->relationInfos as $relationInfo) {
             $relationInfo->addJoinToQuery($this->name, $query);
         }
         foreach ($this->getRelationReplacedColumnInfos() as $columnInfo) {
-            $columnInfo->addFilterToQuery($this->name, $query, $filters);
+            if (array_key_exists($columnInfo->name, $filters)) {
+                $columnInfo->addFilterToQuery($query, $filters[$columnInfo->name]);
+            }
         }
         return $query;
+    }
+
+    public function addOrdersToQuery($query, $orders) {
+        foreach ($this->getRelationReplacedColumnInfos() as $columnInfo) {
+            if (array_key_exists($columnInfo->name, $orders)) {
+                $columnInfo->addOrderByToQuery($query, $orders[$columnInfo->name]);
+            }
+        }
+    }
+
+    public function addSelectsToQuery($query, $columnNames) {
+        $query->select(array_map(function($columnName) {
+            return \DB::raw($columnName);
+        }, $columnNames));
     }
 
     public function getFilterFormInfos($translationPrefix = '') {
@@ -229,6 +248,23 @@ class TableInfos {
         else {
             return false;
         }
+    }
+
+    public function getColumnNamesWithTableName() {
+        return array_values(array_map(function($columnInfo) {
+            return $this->name . '.' . $columnInfo->name;
+        }, $this->columnInfos));
+    }
+
+    public function getColumnNamesWithRelatedTableName() {
+        return array_values(array_map(function($columnInfo) {
+            if ($columnInfo instanceof RelationColumnInfos) {
+                return $columnInfo->getRenderSelect();
+            }
+            else {
+                return $this->name . '.' . $columnInfo->name;
+            }
+        }, $this->getRelationReplacedColumnInfos()));
     }
 
     public function getNameInUrlFormat() {

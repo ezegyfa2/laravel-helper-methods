@@ -13,15 +13,13 @@ use stdClass;
 
 trait CrmControllerRouteFunctions
 {
-    public function getIndexView(string $tableName)
-    {
+    public function getIndexView(string $tableName) {
         $templateParams = $this->getLayoutTemplateParams($tableName);
         $templateParams->table_data = $this->getTableData($tableName);
         return DynamicTemplateMethods::getTemplateDynamicPage($this->indexTemplateName, $templateParams);
     }
 
-    public function getTableData(string $tableName)
-    {
+    public function getTableData(string $tableName) {
         $tableInfos = DatabaseInfos::getAdminTableInfos($tableName, 'index', []);
         $selectedRowToShowCount = intval(request()->get('row-count', 10));
         $selectedPageNumber = intval(request()->get('page-number', 1));
@@ -39,8 +37,7 @@ trait CrmControllerRouteFunctions
         ];
     }
 
-    public function getCreateView(string $tableName)
-    {
+    public function getCreateView(string $tableName) {
         $templateParams = $this->getLayoutTemplateParams($tableName);
         $formItems = DatabaseInfos::getAdminTableInfos($tableName, 'create')->getFormInfos('admin.' . $tableName);
         $templateParams->form_data = (object) [
@@ -53,31 +50,23 @@ trait CrmControllerRouteFunctions
         return DynamicTemplateMethods::getTemplateDynamicPage($this->editTemplateName, $templateParams);
     }
 
-    public function processStore(Request $request, string $tableName)
-    {
+    public function processStore(Request $request, string $tableName) {
         return HttpMethods::getStoreRequest($request, $tableName, 'Model was successfully added!', route($tableName . '.index'));
     }
 
-    public function getData(string $tableName)
-    {
-        return DatabaseInfos::getAdminTableInfos($tableName, 'index', [])->getDataResponse(
-            intval(request()->get('row-count', 10)),
-            intval(request()->get('page-number', 1)),
-            request()->get('filter-data', []),
-            'admin.' . $tableName
-        );
+    public function getData(string $tableName) {
+        return DatabaseInfos::getAdminTableInfos($tableName, 'index', [])
+            ->getRequestDataResponse('admin.' . $tableName);
     }
 
-    public function getSelectOptions(string $tableName)
-    {
+    public function getSelectOptions(string $tableName) {
         $columnName = request()->get('column-name');
         $tableInfos = DatabaseInfos::getAdminTableInfos($tableName, 'index');
         $relationInfos = $tableInfos->getColumnRelation($tableInfos->columnInfos[$columnName]);
         return $relationInfos->getOptions(request()->get('searched-text', 10));
     }
 
-    public function getEditView($id, string $tableName)
-    {
+    public function getEditView($id, string $tableName) {
         $templateParams = $this->getLayoutTemplateParams($tableName);
         $templateParams->form_data = (object) [
             'title' => 'Edit ' . str_replace('_', ' ', Str::singular($tableName)),
@@ -88,13 +77,11 @@ trait CrmControllerRouteFunctions
         return DynamicTemplateMethods::getTemplateDynamicPage($this->editTemplateName, $templateParams);
     }
 
-    public static function processUpdate($id, Request $request, string $tableName)
-    {
+    public static function processUpdate($id, Request $request, string $tableName) {
         return HttpMethods::getUpdateRequest($request, $id, $tableName, 'Model was successfully updated!', route($tableName . '.index'));   
     }
 
-    public static function processDestroy($id, string $tableName)
-    {
+    public static function processDestroy($id, string $tableName) {
         try {
             if (!\DB::table($tableName)->find($id)) {
                 throw new \Exception('Item with id: ' . $id . 'doesn\'t exists in table ' . $tableName);
@@ -108,8 +95,7 @@ trait CrmControllerRouteFunctions
         }
     }
 
-    public function getLayoutTemplateParams(string $tableName)
-    {
+    public function getLayoutTemplateParams(string $tableName) {
         $templateParams = DynamicTemplateMethods::getTranslatedTemplateParamsFromFile($this->getCompiledTemplatePath($tableName, "index"));
         //$templateParams = new stdClass;
         $templateParams->sidebar_sections = $this->getSidebarSections();
@@ -120,8 +106,7 @@ trait CrmControllerRouteFunctions
         return $templateParams;
     }
 
-    public function addSessionDataToTemplateParams($templateParams, $sessionDataName)
-    {
+    public function addSessionDataToTemplateParams($templateParams, $sessionDataName) {
         if (Session::has($sessionDataName)) {
             $templateParams->$sessionDataName = Session::get($sessionDataName);
         }
@@ -151,8 +136,7 @@ trait CrmControllerRouteFunctions
         return $tableNames;
     }*/
 
-    public function getCompiledTemplatePath(string $tableName, string $templateName)
-    {
+    public function getCompiledTemplatePath(string $tableName, string $templateName) {
         return $this->templateFolderPath . '\\' . $templateName . '_compiled.json';
     }
 }
