@@ -68,7 +68,7 @@ class RelationColumnInfos extends ColumnInfos {
     public function getOptions(?string $searchedText = null) {
         $query = \DB::table($this->getReferenceTableName());
         if ($searchedText) {
-            $query = $query->where(\DB::raw($this->getRenderSelect()), 'LIKE', \DB::raw('\'%' . $searchedText . '%\''));
+            $query = $query->where(\DB::raw($this->getRawRenderSelect()), 'LIKE', \DB::raw('\'%' . $searchedText . '%\''));
         }
         if ($query->count() > 20) {
             return __('admin.index.too_many_result');
