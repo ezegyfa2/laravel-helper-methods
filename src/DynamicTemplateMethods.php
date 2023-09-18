@@ -4,17 +4,30 @@ namespace Ezegyfa\LaravelHelperMethods;
 
 class DynamicTemplateMethods
 {
-    public static function getTranslatedTemplateDynamicPage($templateTypeName, $compiledTemplatePath, $templateParams = new \stdObject, $scriptNames = [ 'app' ]) {
+    public static function getTranslatedTemplateDynamicPage(
+        $templateTypeName, 
+        $compiledTemplatePath, 
+        $templateParams = new \stdObject, 
+        array $scriptPaths = [], 
+        array $stylePaths = []
+    ) {
         $templatePath = base_path($compiledTemplatePath);
         foreach (static::getTranslatedTemplateParamsFromFile($templatePath) as $key => $value) {
             $templateParams->$key = $value;
         }
         //$templateParams = [];
-        return static::getTemplateDynamicPage($templateTypeName, $templateParams, $scriptNames);
+        return static::getTemplateDynamicPage($templateTypeName, $templateParams, $scriptPaths, $stylePaths);
     }
 
-    public static function getTemplateDynamicPage($templateTypeName, $templateParams = new \stdObject, array $scriptNames = [ 'app' ]) {
-        return view('ezegyfa::dynamicPage', compact('templateTypeName', 'templateParams', 'scriptNames'));
+    public static function getTemplateDynamicPage(
+        $templateTypeName, 
+        $templateParams = new \stdObject, 
+        array $scriptPaths = [], 
+        array $stylePaths = []
+    ) {
+        $scriptPaths = [ 'basicPackages', ...$scriptPaths ];
+        $stylePaths = [ 'bootstrap/bootstrap.min', ...$stylePaths ];
+        return view('ezegyfa::dynamicPage', compact('templateTypeName', 'templateParams', 'scriptPaths', 'stylePaths'));
     }
 
     public static function getTranslatedTemplateParamsFromFile($templateFilePath, $paramPrefix = '') {
