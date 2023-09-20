@@ -15,6 +15,7 @@ class Middleware
         $lastSegment = LanguageMethods::getCurrentUrlLastSegment();
         if (in_array($lastSegment, LanguageMethods::getTranslatedLanguages())) {
             $this->changeLanguage($lastSegment);
+            return redirect(str_replace($lastSegment, '', HttpMethods::getCurrentUrlPath()));
         }
         else {
             $routeTranslation = $this->getRouteTranslationLanguage(HttpMethods::getCurrentUrlPath());

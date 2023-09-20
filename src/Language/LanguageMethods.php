@@ -109,7 +109,12 @@ class LanguageMethods
         $currentLanguage = App::currentLocale();
         foreach(static::getTranslatedLanguages() as $language) {
             App::setLocale($language);
-            $routeCreator('/' . __('routes' . $urlToTranslate), $controllerAction);
+            if ($urlToTranslate == '.' || $urlToTranslate == '') {
+                $routeCreator('/' . $language, $controllerAction);
+            }
+            else {
+                $routeCreator('/' . __('routes' . $urlToTranslate), $controllerAction);
+            }
         }
         App::setLocale($currentLanguage);
     }
