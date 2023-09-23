@@ -39,7 +39,7 @@ class CreateListToTranslate extends Command
      */
     public function handle()
     {
-        $folderPath = 'D:\Projektek\Sajat\Forditas';
+        $folderPath = config('app.translation_folder_path');
         $filePathToTranslate = FolderMethods::combinePaths($folderPath, "texts.php");
         $textsToTranslate = $this->getTextsToTranslate($filePathToTranslate);
         $translateValuesFileName = pathinfo($filePathToTranslate)['filename'] . '_values.json';

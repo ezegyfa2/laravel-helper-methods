@@ -2,6 +2,10 @@
 
 namespace Ezegyfa\LaravelHelperMethods;
 
+use Ezegyfa\LaravelHelperMethods\Language\LanguageMethods;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Session;
+
 class DynamicTemplateMethods
 {
     public static function getTranslatedTemplateDynamicPage(
@@ -11,7 +15,7 @@ class DynamicTemplateMethods
         array $scriptPaths = [], 
         array $stylePaths = []
     ) {
-        $templatePath = base_path($compiledTemplatePath);
+        $templatePath = base_path('/app/Templates/' . $compiledTemplatePath . '.json');
         foreach (static::getTranslatedTemplateParamsFromFile($templatePath) as $key => $value) {
             $templateParams->$key = $value;
         }
@@ -109,5 +113,18 @@ class DynamicTemplateMethods
         else {
             return $template;
         }
+    }
+
+    public static function getTemplateLayoutParams() {
+        $templateParams = new \stdClass;
+        $templateParams->current_language = strtoupper(App::currentLocale());
+        $templateParams->languages = LanguageMethods::getTranslationUrlObjects();
+        if (Session::has('success_message')) {
+            $templateParams->success_messages = [ __(Session::get('success_message')) ];
+        }
+        else if (request()->get('success_message')) {
+            $templateParams->success_messages = [ __(request()->get('success_message')) ];
+        }
+        return $templateParams;
     }
 }
