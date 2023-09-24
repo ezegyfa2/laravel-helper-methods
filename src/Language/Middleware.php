@@ -10,8 +10,7 @@ use Illuminate\Support\Facades\Session;
 
 class Middleware
 {
-    public function handle($request, \Closure $next)
-    {
+    public function handle($request, \Closure $next) {
         $lastSegment = LanguageMethods::getCurrentUrlLastSegment();
         if (in_array($lastSegment, LanguageMethods::getTranslatedLanguages())) {
             $this->changeLanguage($lastSegment);

@@ -15,7 +15,7 @@ class DynamicTemplateMethods
         array $scriptPaths = [], 
         array $stylePaths = []
     ) {
-        $templatePath = base_path('/app/Templates/' . $compiledTemplatePath . '.json');
+        $templatePath = base_path('app/Templates/' . $compiledTemplatePath . '.json');
         foreach (static::getTranslatedTemplateParamsFromFile($templatePath) as $key => $value) {
             $templateParams->$key = $value;
         }
