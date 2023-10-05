@@ -30,7 +30,6 @@ class DynamicTemplateMethods
         array $stylePaths = []
     ) {
         $scriptPaths = [ 'basicPackages', ...$scriptPaths ];
-        $stylePaths = [ 'bootstrap.min', ...$stylePaths ];
         return view('ezegyfa::dynamicPage', compact('templateTypeName', 'templateParams', 'scriptPaths', 'stylePaths'));
     }
 

@@ -47,14 +47,18 @@ class HttpMethods
             $request->merge(static::getCorrectedRequestData($request->all(), $tableInfos));
             $request->validate($tableInfos->getValidators());
             $success = static::store($request, $tableName);
-            return response()->json([
-                'success' => $success,
-                'id' => \DB::getPdo()->lastInsertId()
-            ]);
+            if ($success) {
+                return response()->json([
+                    'id' => \DB::getPdo()->lastInsertId()
+                ]);
+            }
+            else {
+                return response()->json([], 500);
+            }
         }
         catch (ValidationException $e) {
             $errorMessages = static::updateErrors($e->errors(), $e->validator->failed());
-            return response()->json($errorMessages);
+            return response()->json($errorMessages, 400);
         }
     }
 
