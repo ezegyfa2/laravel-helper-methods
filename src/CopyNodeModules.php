@@ -46,11 +46,11 @@ class CopyNodeModules extends Command
 
     public function copyNodeModules($nodeRootFolderPath) {
         $vueFolderPath = $nodeRootFolderPath . '/Vue';
-        $this->copyModules($vueFolderPath, 'node_modules');
+        /*$this->copyModules($vueFolderPath, 'node_modules');
         $this->copyModule($nodeRootFolderPath . '/js-helper-methods', 'node_modules');
         if (!$this->option('nonpm')) {
             shell_exec('npm run dev');
-        }
+        }*/
     }
 
     public function copyModules(string $sourceFolderPath, string $moduleFolderName) {
