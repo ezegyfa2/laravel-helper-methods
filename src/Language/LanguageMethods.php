@@ -158,4 +158,13 @@ class LanguageMethods
     public static function getTranslatedLanguages() {
         return FolderMethods::getFolderSubFolders(resource_path('lang'));
     }
+
+    public static function getMetaDescription() {
+        if (request()->path() == '/') {
+            return __('welcome.meta_description');
+        }
+        else {
+            return __(request()->path() . '.meta_description');
+        }
+    }
 }

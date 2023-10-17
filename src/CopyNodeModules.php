@@ -37,8 +37,8 @@ class CopyNodeModules extends Command
      */
     public function handle()
     {
-        CheckingMethods::checkConfigValueIsSet('app.node_modules_folder_path');
-        $this->copyNodeModules(config('app.node_modules_folder_path'));
+        //CheckingMethods::checkConfigValueIsSet('app.node_modules_folder_path');
+        //$this->copyNodeModules(config('app.node_modules_folder_path'));
         CheckingMethods::checkConfigValueIsSet('app.laravel_methods_folder_path');
         $this->copyModule(config('app.laravel_methods_folder_path'), 'vendor/ezegyfa');
         return 0;
